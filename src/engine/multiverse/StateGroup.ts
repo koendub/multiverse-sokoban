@@ -1,4 +1,4 @@
-import type { AxisId, AxisValue, EntityId, GroupId, Vec2 } from "./types.ts";
+import type { AxisId, AxisValue, EntityId, Vec2 } from "./types.ts";
 import type { EntitySpec } from "./entities.ts";
 
 /**
@@ -19,16 +19,15 @@ import type { EntitySpec } from "./entities.ts";
  *   single fixed position for the whole group, independent of any axis.
  */
 export interface StateGroup {
-  readonly id: GroupId;
   readonly player: Vec2;
   readonly axisSubsets: ReadonlyMap<AxisId, ReadonlySet<AxisValue>>;
   readonly overrides: ReadonlyMap<EntityId, Vec2>;
 }
 
-export function restrictGroupByAxis(group: StateGroup, axis: AxisId, subset: ReadonlySet<AxisValue>, id: GroupId): StateGroup {
+export function restrictGroupByAxis(group: StateGroup, axis: AxisId, subset: ReadonlySet<AxisValue>): StateGroup {
   const axisSubsets = new Map(group.axisSubsets);
   axisSubsets.set(axis, subset);
-  return { id, player: group.player, axisSubsets, overrides: group.overrides };
+  return { player: group.player, axisSubsets, overrides: group.overrides };
 }
 
 /**
@@ -69,6 +68,6 @@ export function representativeValue(group: StateGroup, entityId: EntityId, spec:
   if (spec.kind === "constant") return spec.pos;
   const subset = group.axisSubsets.get(spec.axis);
   const first = subset?.values().next();
-  if (!first || first.done) throw new Error(`Axis "${spec.axis}" has no remaining values in group ${group.id}`);
+  if (!first || first.done) throw new Error(`Axis "${spec.axis}" has no remaining values for entity "${entityId}"`);
   return spec.valueFor(first.value);
 }

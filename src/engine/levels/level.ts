@@ -39,7 +39,6 @@ export function buildLevel(level: LevelDef): BuiltLevel {
   }
 
   const initialGroup: StateGroup = {
-    id: "g0",
     player: level.player,
     axisSubsets,
     overrides: new Map(),

@@ -1,4 +1,4 @@
-import type { DirectionName, EntityId, GroupId, UniverseKey, Vec2 } from "./types.ts";
+import type { DirectionName, EntityId, UniverseKey, Vec2 } from "./types.ts";
 import { Direction } from "./types.ts";
 import type { Grid } from "./grid.ts";
 import type { EntitySpec } from "./entities.ts";
@@ -30,7 +30,6 @@ export class Multiverse {
   private groups: StateGroup[];
   private readonly initialGroup: StateGroup;
   private history: StateGroup[][] = [];
-  private groupCounter = 0;
 
   constructor(level: LevelDef) {
     const { grid, entities, initialGroup } = buildLevel(level);
@@ -38,11 +37,6 @@ export class Multiverse {
     this.entities = entities;
     this.groups = [initialGroup];
     this.initialGroup = initialGroup;
-  }
-
-  private nextGroupId(): GroupId {
-    this.groupCounter += 1;
-    return `g${this.groupCounter}`;
   }
 
   /** Current groups. Their count reflects meaningfully-different states, not the theoretical universe count. */
@@ -60,7 +54,7 @@ export class Multiverse {
   step(dir: DirectionName): void {
     const delta = Direction[dir];
     const expanded = this.groups.flatMap((g) => resolveMove(g, delta, this.grid, this.entities));
-    const merged = mergeGroups(expanded, this.entities, () => this.nextGroupId());
+    const merged = mergeGroups(expanded, this.entities);
     this.history.push(this.groups);
     this.groups = merged;
   }

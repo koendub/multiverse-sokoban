@@ -5,7 +5,6 @@ import { constantEntity, variantEntity } from "../multiverse/entities.ts";
 
 function group(axisSubset: number[]): StateGroup {
   return {
-    id: "g0",
     player: { x: 0, y: 0 },
     axisSubsets: new Map([["a", new Set(axisSubset)]]),
     overrides: new Map(),
@@ -38,7 +37,7 @@ describe("entityOutcomes", () => {
 describe("restrictGroupByAxis", () => {
   it("narrows one axis and leaves everything else untouched", () => {
     const g = group([0, 1, 2]);
-    const restricted = restrictGroupByAxis(g, "a", new Set([1]), "g1");
+    const restricted = restrictGroupByAxis(g, "a", new Set([1]));
     expect(restricted.axisSubsets.get("a")).toEqual(new Set([1]));
     expect(restricted.player).toBe(g.player);
     expect(restricted.overrides).toBe(g.overrides);

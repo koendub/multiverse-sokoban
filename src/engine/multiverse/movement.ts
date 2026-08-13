@@ -47,7 +47,7 @@ function findOccupant(group: StateGroup, target: Vec2, entities: Entities): Enti
 function splitOnAxis(group: StateGroup, axis: AxisId, matching: Set<AxisValue>): [StateGroup, StateGroup] {
   const subset = group.axisSubsets.get(axis)!;
   const rest = new Set([...subset].filter((v) => !matching.has(v)));
-  return [restrictGroupByAxis(group, axis, matching, `${group.id}.a`), restrictGroupByAxis(group, axis, rest, `${group.id}.b`)];
+  return [restrictGroupByAxis(group, axis, matching), restrictGroupByAxis(group, axis, rest)];
 }
 
 /**

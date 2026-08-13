@@ -35,9 +35,6 @@ export type AxisValue = number;
 /** Identifies an entity (box, later door/button/...) tracked across universes. */
 export type EntityId = string;
 
-/** Identifies a StateGroup within a Multiverse. */
-export type GroupId = string;
-
 /**
  * A full assignment of one value per axis - i.e. the identity of one
  * specific concrete universe. Only ever built on demand (e.g. to render one

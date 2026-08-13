@@ -1,4 +1,4 @@
-import type { AxisId, AxisValue, EntityId, GroupId, Vec2 } from "./types.ts";
+import type { AxisId, AxisValue, EntityId, Vec2 } from "./types.ts";
 import { vecKey } from "./types.ts";
 import type { EntitySpec } from "./entities.ts";
 import type { StateGroup } from "./StateGroup.ts";
@@ -44,13 +44,13 @@ function mergeOverride(a: StateGroup, b: StateGroup, entityId: EntityId): Vec2 |
   return a.overrides.get(entityId) ?? b.overrides.get(entityId);
 }
 
-function mergeTwoGroups(a: StateGroup, b: StateGroup, entities: Entities, id: GroupId): StateGroup {
+function mergeTwoGroups(a: StateGroup, b: StateGroup, entities: Entities): StateGroup {
   const overrides = new Map<EntityId, Vec2>();
   for (const entityId of entities.keys()) {
     const value = mergeOverride(a, b, entityId);
     if (value !== undefined) overrides.set(entityId, value);
   }
-  return { id, player: a.player, axisSubsets: mergeAxisSubsets(a, b), overrides };
+  return { player: a.player, axisSubsets: mergeAxisSubsets(a, b), overrides };
 }
 
 /**
@@ -59,12 +59,12 @@ function mergeTwoGroups(a: StateGroup, b: StateGroup, entities: Entities, id: Gr
  * group, so the group count stays proportional to meaningfully different
  * states rather than to history.
  */
-export function mergeGroups(groups: readonly StateGroup[], entities: Entities, nextId: () => GroupId): StateGroup[] {
+export function mergeGroups(groups: readonly StateGroup[], entities: Entities): StateGroup[] {
   const bySignature = new Map<string, StateGroup>();
   for (const group of groups) {
     const sig = canonicalSignature(group, entities);
     const existing = bySignature.get(sig);
-    bySignature.set(sig, existing ? mergeTwoGroups(existing, group, entities, nextId()) : group);
+    bySignature.set(sig, existing ? mergeTwoGroups(existing, group, entities) : group);
   }
   return [...bySignature.values()];
 }
