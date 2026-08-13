@@ -1,0 +1,117 @@
+import type { DirectionName, EntityId, GroupId, UniverseKey, Vec2 } from "./types.ts";
+import { Direction } from "./types.ts";
+import type { Grid } from "./grid.ts";
+import type { EntitySpec } from "./entities.ts";
+import type { StateGroup } from "./StateGroup.ts";
+import { entityOutcomes, representativeValue } from "./StateGroup.ts";
+import { resolveMove } from "./movement.ts";
+import { mergeGroups } from "./merge.ts";
+import type { LevelDef } from "./levels/level.ts";
+import { buildLevel } from "./levels/level.ts";
+
+export interface UniverseView {
+  readonly player: Vec2;
+  readonly boxes: ReadonlyMap<EntityId, Vec2>;
+}
+
+/**
+ * Top-level simulation. Owns the static grid and the current set of
+ * StateGroups, which together partition all possible universes - without
+ * ever listing them. `step(dir)` applies one input to every universe
+ * simultaneously: each existing group is resolved independently (lazily
+ * splitting only along the one axis a real distinction depends on, see
+ * movement.ts), and results are merged back together wherever they've
+ * become equivalent (see merge.ts).
+ */
+export class Multiverse {
+  readonly grid: Grid;
+  readonly entities: ReadonlyMap<EntityId, EntitySpec>;
+
+  private groups: StateGroup[];
+  private readonly initialGroup: StateGroup;
+  private history: StateGroup[][] = [];
+  private groupCounter = 0;
+
+  constructor(level: LevelDef) {
+    const { grid, entities, initialGroup } = buildLevel(level);
+    this.grid = grid;
+    this.entities = entities;
+    this.groups = [initialGroup];
+    this.initialGroup = initialGroup;
+  }
+
+  private nextGroupId(): GroupId {
+    this.groupCounter += 1;
+    return `g${this.groupCounter}`;
+  }
+
+  /** Current groups. Their count reflects meaningfully-different states, not the theoretical universe count. */
+  getGroups(): readonly StateGroup[] {
+    return this.groups;
+  }
+
+  /** How many concrete universes a group currently stands for - a product of small counts, never enumerated. */
+  groupMultiplicity(group: StateGroup): bigint {
+    let total = 1n;
+    for (const subset of group.axisSubsets.values()) total *= BigInt(subset.size);
+    return total;
+  }
+
+  step(dir: DirectionName): void {
+    const delta = Direction[dir];
+    const expanded = this.groups.flatMap((g) => resolveMove(g, delta, this.grid, this.entities));
+    const merged = mergeGroups(expanded, this.entities, () => this.nextGroupId());
+    this.history.push(this.groups);
+    this.groups = merged;
+  }
+
+  undo(): boolean {
+    const prev = this.history.pop();
+    if (!prev) return false;
+    this.groups = prev;
+    return true;
+  }
+
+  restart(): void {
+    this.groups = [this.initialGroup];
+    this.history = [];
+  }
+
+  canUndo(): boolean {
+    return this.history.length > 0;
+  }
+
+  /** True once every box sits on a goal in every universe currently represented. */
+  isSolved(): boolean {
+    return this.groups.every((group) =>
+      [...this.entities].every(([id, spec]) => entityOutcomes(group, id, spec).every((o) => this.grid.isGoal(o.value))),
+    );
+  }
+
+  /**
+   * Reconstructs one arbitrary representative universe's state for a group,
+   * without needing a full axis assignment - handy for rendering "one board
+   * per group" without caring exactly which universe it stands for.
+   */
+  getRepresentativeView(group: StateGroup): UniverseView {
+    const boxes = new Map<EntityId, Vec2>();
+    for (const [id, spec] of this.entities) boxes.set(id, representativeValue(group, id, spec));
+    return { player: group.player, boxes };
+  }
+
+  /** Reconstructs one specific universe's state from a full per-axis key. */
+  getUniverseView(key: UniverseKey): UniverseView {
+    const group = this.groups.find((g) => [...g.axisSubsets].every(([axis, subset]) => !(axis in key) || subset.has(key[axis])));
+    if (!group) throw new Error(`No group matches universe key ${JSON.stringify(key)}`);
+
+    const boxes = new Map<EntityId, Vec2>();
+    for (const [id, spec] of this.entities) {
+      if (spec.kind === "constant" || group.overrides.has(id)) {
+        boxes.set(id, representativeValue(group, id, spec));
+      } else {
+        boxes.set(id, spec.valueFor(key[spec.axis]));
+      }
+    }
+    return { player: group.player, boxes };
+  }
+}

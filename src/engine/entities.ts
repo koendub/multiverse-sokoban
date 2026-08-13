@@ -1,0 +1,25 @@
+import type { AxisId, AxisValue, Vec2 } from "./types.ts";
+
+/**
+ * How a box's position is determined:
+ * - "constant": same position in every universe.
+ * - "variant": a pure function of one axis's current value. Two entities
+ *   sharing the same axis id stay correlated for free, since both are
+ *   evaluated against the same (small) set of remaining axis values.
+ *
+ * Once a variant entity is actually pushed, its position for the owning
+ * group is recorded as an override (see StateGroup.ts) and this formula
+ * stops being consulted for that group - it only matters for entities that
+ * haven't been touched yet.
+ */
+export type EntitySpec =
+  | { readonly kind: "constant"; readonly pos: Vec2 }
+  | { readonly kind: "variant"; readonly axis: AxisId; readonly valueFor: (v: AxisValue) => Vec2 };
+
+export function constantEntity(pos: Vec2): EntitySpec {
+  return { kind: "constant", pos };
+}
+
+export function variantEntity(axis: AxisId, valueFor: (v: AxisValue) => Vec2): EntitySpec {
+  return { kind: "variant", axis, valueFor };
+}
