@@ -83,6 +83,47 @@ export class Multiverse {
   }
 
   /**
+   * How many currently-represented universes already have every box on a
+   * goal. Computed per axis rather than by enumerating universes: since
+   * axes vary independently, the count for a group is the product, over
+   * each axis, of how many of its remaining values keep every entity that
+   * depends on it on a goal (axes no entity depends on contribute their
+   * full size unchanged).
+   */
+  solvedMultiplicity(): bigint {
+    return this.groups.reduce((sum, group) => sum + this.groupSolvedMultiplicity(group), 0n);
+  }
+
+  private groupSolvedMultiplicity(group: StateGroup): bigint {
+    const dependents = new Map<string, EntitySpec[]>();
+    for (const [id, spec] of this.entities) {
+      if (spec.kind === "constant" || group.overrides.has(id)) {
+        if (!this.grid.isGoal(representativeValue(group, id, spec))) return 0n;
+        continue;
+      }
+      const list = dependents.get(spec.axis) ?? [];
+      list.push(spec);
+      dependents.set(spec.axis, list);
+    }
+
+    let total = 1n;
+    for (const [axisId, subset] of group.axisSubsets) {
+      const deps = dependents.get(axisId);
+      if (!deps) {
+        total *= BigInt(subset.size);
+        continue;
+      }
+      let satisfying = 0;
+      for (const v of subset) {
+        if (deps.every((spec) => spec.kind === "variant" && this.grid.isGoal(spec.valueFor(v)))) satisfying += 1;
+      }
+      total *= BigInt(satisfying);
+      if (total === 0n) return 0n;
+    }
+    return total;
+  }
+
+  /**
    * Reconstructs one arbitrary representative universe's state for a group,
    * without needing a full axis assignment - handy for rendering "one board
    * per group" without caring exactly which universe it stands for.

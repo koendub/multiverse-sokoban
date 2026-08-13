@@ -187,3 +187,37 @@ describe("Multiverse - correlated entities across universes", () => {
     }
   });
 });
+
+describe("Multiverse - solvedMultiplicity", () => {
+  it("counts satisfying axis values without enumerating universes", () => {
+    const level: LevelDef = {
+      width: 6,
+      height: 6,
+      walls: [],
+      goals: [{ x: 0, y: 0 }],
+      axes: [{ id: "a", size: 3 }],
+      player: { x: 5, y: 5 }, // far away, never moves
+      boxes: {
+        b: variantEntity("a", (v) => (v === 0 ? { x: 0, y: 0 } : { x: v, y: 4 })),
+      },
+    };
+    const mv = new Multiverse(level);
+    expect(mv.solvedMultiplicity()).toBe(1n); // only axis value 0 lands on the goal
+    expect(mv.isSolved()).toBe(false);
+  });
+
+  it("matches the total once every universe is solved", () => {
+    const level: LevelDef = {
+      width: 3,
+      height: 3,
+      walls: [],
+      goals: [{ x: 1, y: 1 }],
+      axes: [],
+      player: { x: 0, y: 0 },
+      boxes: { b: constantEntity({ x: 1, y: 1 }) },
+    };
+    const mv = new Multiverse(level);
+    expect(mv.isSolved()).toBe(true);
+    expect(mv.solvedMultiplicity()).toBe(1n);
+  });
+});

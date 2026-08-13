@@ -44,9 +44,15 @@ export class Grid {
   }
 
   allGoals(): Vec2[] {
-    return [...this.goals].map((key) => {
-      const [x, y] = key.split(",").map(Number);
-      return { x, y };
-    });
+    return [...this.goals].map(parseKey);
   }
+
+  allWalls(): Vec2[] {
+    return [...this.walls].map(parseKey);
+  }
+}
+
+function parseKey(key: string): Vec2 {
+  const [x, y] = key.split(",").map(Number);
+  return { x, y };
 }
