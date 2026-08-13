@@ -1,8 +1,7 @@
-import { sampleLevel } from "./engine/levels/sampleLevel.ts";
-import { GameView } from "./components/GameView.tsx";
+import { GameApp } from "./components/GameApp.tsx";
 
 function App() {
-  return <GameView level={sampleLevel} />;
+  return <GameApp />;
 }
 
 export default App;

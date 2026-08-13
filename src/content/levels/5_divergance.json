@@ -1,0 +1,52 @@
+{
+  "number": 5,
+  "name": "Divergence",
+  "grid": [
+    "######",
+    "#G...#",
+    "####.#",
+    "#G...#",
+    "#...P#",
+    "######"
+  ],
+  "axes": [
+    {
+      "id": "axisA",
+      "size": 2
+    },
+    {
+      "id": "axisB",
+      "size": 2
+    }
+  ],
+  "boxes": {
+    "a": {
+      "type": "variant",
+      "axis": "axisA",
+      "positions": [
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 3,
+          "y": 1
+        }
+      ]
+    },
+    "b": {
+      "type": "variant",
+      "axis": "axisB",
+      "positions": [
+        {
+          "x": 2,
+          "y": 3
+        },
+        {
+          "x": 3,
+          "y": 3
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "number": 1,
+  "name": "Introduction",
+  "grid": [
+    "##########",
+    "#........#",
+    "#.P....G.#",
+    "#........#",
+    "##########"
+  ],
+  "axes": [
+    {
+      "id": "boxAxis",
+      "size": 1
+    }
+  ],
+  "boxes": {
+    "b": {
+      "type": "variant",
+      "axis": "boxAxis",
+      "positions": [
+        { "x": 5, "y": 2 }
+      ]
+    }
+  }
+}
