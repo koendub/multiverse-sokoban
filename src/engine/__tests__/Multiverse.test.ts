@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { Multiverse } from "../Multiverse.ts";
+import { Multiverse } from "../multiverse/Multiverse.ts";
 import type { LevelDef } from "../levels/level.ts";
-import { sampleLevel } from "../sampleLevel.ts";
-import { constantEntity, variantEntity } from "../entities.ts";
+import { sampleLevel } from "../levels/sampleLevel.ts";
+import { constantEntity, variantEntity } from "../multiverse/entities.ts";
 
 describe("Multiverse - lazy split/merge", () => {
   it("starts as a single group covering every universe, even with varying entities", () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { entityOutcomes, representativeValue, restrictGroupByAxis } from "../StateGroup.ts";
-import type { StateGroup } from "../StateGroup.ts";
-import { constantEntity, variantEntity } from "../entities.ts";
+import { entityOutcomes, representativeValue, restrictGroupByAxis } from "../multiverse/StateGroup.ts";
+import type { StateGroup } from "../multiverse/StateGroup.ts";
+import { constantEntity, variantEntity } from "../multiverse/entities.ts";
 
 function group(axisSubset: number[]): StateGroup {
   return {

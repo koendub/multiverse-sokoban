@@ -1,9 +1,9 @@
-import type { AxisId, AxisValue, EntityId, Vec2 } from "../types.ts";
-import type { Axis } from "../axis.ts";
-import { fullDomain } from "../axis.ts";
-import type { EntitySpec } from "../entities.ts";
-import { Grid } from "../grid.ts";
-import type { StateGroup } from "../StateGroup.ts";
+import type { AxisId, AxisValue, EntityId, Vec2 } from "../multiverse/types.ts";
+import type { Axis } from "../multiverse/entities.ts";
+import { fullDomain } from "../multiverse/entities.ts";
+import type { EntitySpec } from "../multiverse/entities.ts";
+import { Grid } from "../multiverse/grid.ts";
+import type { StateGroup } from "../multiverse/StateGroup.ts";
 
 export interface LevelDef {
   readonly width: number;

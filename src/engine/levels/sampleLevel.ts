@@ -1,6 +1,6 @@
-import type { LevelDef } from "./levels/level.ts";
-import type { Vec2 } from "./types.ts";
-import { variantEntity } from "./entities.ts";
+import type { LevelDef } from "./level.ts";
+import type { Vec2 } from "../multiverse/types.ts";
+import { variantEntity } from "../multiverse/entities.ts";
 
 /**
  * A small demo level: one box that starts at (2,2), (3,2) or (4,2)

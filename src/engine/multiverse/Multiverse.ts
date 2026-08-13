@@ -6,8 +6,8 @@ import type { StateGroup } from "./StateGroup.ts";
 import { entityOutcomes, representativeValue } from "./StateGroup.ts";
 import { resolveMove } from "./movement.ts";
 import { mergeGroups } from "./merge.ts";
-import type { LevelDef } from "./levels/level.ts";
-import { buildLevel } from "./levels/level.ts";
+import type { LevelDef } from "../levels/level.ts";
+import { buildLevel } from "../levels/level.ts";
 
 export interface UniverseView {
   readonly player: Vec2;
