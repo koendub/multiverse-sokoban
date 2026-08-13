@@ -27,7 +27,11 @@ export const sampleLevel: LevelDef = {
   axes: [{ id: "boxAxis", size: 3 }],
   player: { x: 2, y: 4 },
   boxes: {
-    b: variantEntity("boxAxis", (v) => ({ x: 2 + v, y: 2 })),
+    b: variantEntity("boxAxis", [
+      { x: 2, y: 2 },
+      { x: 3, y: 2 },
+      { x: 4, y: 2 },
+    ]),
   },
 };
 

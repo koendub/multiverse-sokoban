@@ -22,7 +22,7 @@ function findAmbiguity(group: StateGroup, target: Vec2, entities: Entities): { a
     if (!subset || subset.size <= 1) continue;
     const matching = new Set<AxisValue>();
     for (const v of subset) {
-      if (vecEq(spec.valueFor(v), target)) matching.add(v);
+      if (vecEq(spec.positions[v], target)) matching.add(v);
     }
     if (matching.size > 0 && matching.size < subset.size) {
       return { axis: spec.axis, matching };

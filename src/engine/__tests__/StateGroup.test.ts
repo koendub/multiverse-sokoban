@@ -19,7 +19,12 @@ describe("entityOutcomes", () => {
   });
 
   it("a variant entity buckets by distinct resulting value, not by raw axis value", () => {
-    const spec = variantEntity("a", (v) => ({ x: v < 2 ? 0 : 1, y: 0 }));
+    const spec = variantEntity("a", [
+      { x: 0, y: 0 },
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+      { x: 1, y: 0 },
+    ]);
     const outcomes = entityOutcomes(group([0, 1, 2, 3]), "e", spec);
     expect(outcomes).toHaveLength(2);
     const byX = new Map(outcomes.map((o) => [o.value.x, o.axisValues.slice().sort()]));
@@ -27,8 +32,11 @@ describe("entityOutcomes", () => {
     expect(byX.get(1)).toEqual([2, 3]);
   });
 
-  it("an override takes precedence over the axis formula", () => {
-    const spec = variantEntity("a", (v) => ({ x: v, y: 0 }));
+  it("an override takes precedence over the position table", () => {
+    const spec = variantEntity(
+      "a",
+      [0, 1, 2].map((v) => ({ x: v, y: 0 })),
+    );
     const g: StateGroup = { ...group([0, 1, 2]), overrides: new Map([["e", { x: 99, y: 99 }]]) };
     expect(entityOutcomes(g, "e", spec)).toEqual([{ value: { x: 99, y: 99 }, axisValues: [] }]);
   });
@@ -45,8 +53,11 @@ describe("restrictGroupByAxis", () => {
 });
 
 describe("representativeValue", () => {
-  it("resolves via the axis formula when not overridden", () => {
-    const spec = variantEntity("a", (v) => ({ x: v * 10, y: 0 }));
+  it("resolves via the position table when not overridden", () => {
+    const spec = variantEntity(
+      "a",
+      [0, 1, 2].map((v) => ({ x: v * 10, y: 0 })),
+    );
     expect(representativeValue(group([2]), "e", spec)).toEqual({ x: 20, y: 0 });
   });
 });

@@ -24,23 +24,27 @@ export function fullDomain(axis: Axis): AxisValue[] {
 /**
  * How a box's position is determined:
  * - "constant": same position in every universe.
- * - "variant": a pure function of one axis's current value. Two entities
- *   sharing the same axis id stay correlated for free, since both are
- *   evaluated against the same (small) set of remaining axis values.
+ * - "variant": looked up from one axis's current value - `positions[v]` is
+ *   the position at axis value `v`. Two entities sharing the same axis id
+ *   stay correlated for free, since both are looked up against the same
+ *   (small) set of remaining axis values. Plain data rather than a
+ *   function, so levels - including ones loaded from config files - can
+ *   declare it directly.
  *
  * Once a variant entity is actually pushed, its position for the owning
- * group is recorded as an override (see StateGroup.ts) and this formula
+ * group is recorded as an override (see StateGroup.ts) and `positions`
  * stops being consulted for that group - it only matters for entities that
  * haven't been touched yet.
  */
 export type EntitySpec =
   | { readonly kind: "constant"; readonly pos: Vec2 }
-  | { readonly kind: "variant"; readonly axis: AxisId; readonly valueFor: (v: AxisValue) => Vec2 };
+  | { readonly kind: "variant"; readonly axis: AxisId; readonly positions: readonly Vec2[] };
 
 export function constantEntity(pos: Vec2): EntitySpec {
   return { kind: "constant", pos };
 }
 
-export function variantEntity(axis: AxisId, valueFor: (v: AxisValue) => Vec2): EntitySpec {
-  return { kind: "variant", axis, valueFor };
+/** `positions[v]` must exist for every value `v` in the axis's domain (0..size-1). */
+export function variantEntity(axis: AxisId, positions: readonly Vec2[]): EntitySpec {
+  return { kind: "variant", axis, positions };
 }

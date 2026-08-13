@@ -33,6 +33,16 @@ export function buildLevel(level: LevelDef): BuiltLevel {
   const grid = new Grid(level.width, level.height, level.walls, level.goals);
   const entities = new Map<EntityId, EntitySpec>(Object.entries(level.boxes));
 
+  const axesById = new Map(level.axes.map((axis) => [axis.id, axis]));
+  for (const [entityId, spec] of entities) {
+    if (spec.kind !== "variant") continue;
+    const axis = axesById.get(spec.axis);
+    if (!axis) throw new Error(`Entity "${entityId}" references unknown axis "${spec.axis}"`);
+    if (spec.positions.length !== axis.size) {
+      throw new Error(`Entity "${entityId}" has ${spec.positions.length} positions but axis "${spec.axis}" has size ${axis.size}`);
+    }
+  }
+
   const axisSubsets = new Map<AxisId, ReadonlySet<AxisValue>>();
   for (const axis of level.axes) {
     axisSubsets.set(axis.id, new Set(fullDomain(axis)));

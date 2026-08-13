@@ -49,7 +49,7 @@ export function entityOutcomes(group: StateGroup, entityId: EntityId, spec: Enti
   const subset = group.axisSubsets.get(spec.axis) ?? new Set<AxisValue>();
   const buckets = new Map<string, { value: Vec2; axisValues: AxisValue[] }>();
   for (const v of subset) {
-    const value = spec.valueFor(v);
+    const value = spec.positions[v];
     const key = `${value.x},${value.y}`;
     let bucket = buckets.get(key);
     if (!bucket) {
@@ -69,5 +69,5 @@ export function representativeValue(group: StateGroup, entityId: EntityId, spec:
   const subset = group.axisSubsets.get(spec.axis);
   const first = subset?.values().next();
   if (!first || first.done) throw new Error(`Axis "${spec.axis}" has no remaining values for entity "${entityId}"`);
-  return spec.valueFor(first.value);
+  return spec.positions[first.value];
 }

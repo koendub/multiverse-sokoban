@@ -115,7 +115,7 @@ export class Multiverse {
       }
       let satisfying = 0;
       for (const v of subset) {
-        if (deps.every((spec) => spec.kind === "variant" && this.grid.isGoal(spec.valueFor(v)))) satisfying += 1;
+        if (deps.every((spec) => spec.kind === "variant" && this.grid.isGoal(spec.positions[v]))) satisfying += 1;
       }
       total *= BigInt(satisfying);
       if (total === 0n) return 0n;
@@ -144,7 +144,7 @@ export class Multiverse {
       if (spec.kind === "constant" || group.overrides.has(id)) {
         boxes.set(id, representativeValue(group, id, spec));
       } else {
-        boxes.set(id, spec.valueFor(key[spec.axis]));
+        boxes.set(id, spec.positions[key[spec.axis]]);
       }
     }
     return { player: group.player, boxes };

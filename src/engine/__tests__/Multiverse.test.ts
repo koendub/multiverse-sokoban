@@ -21,7 +21,13 @@ describe("Multiverse - lazy split/merge", () => {
       axes: Array.from({ length: 5 }, (_, i) => ({ id: `axis${i}`, size: 3 })),
       player: { x: 0, y: 0 },
       boxes: Object.fromEntries(
-        Array.from({ length: 5 }, (_, i) => [`box${i}`, variantEntity(`axis${i}`, (v) => ({ x: v, y: i + 1 }))]),
+        Array.from({ length: 5 }, (_, i) => [
+          `box${i}`,
+          variantEntity(
+            `axis${i}`,
+            [0, 1, 2].map((v) => ({ x: v, y: i + 1 })),
+          ),
+        ]),
       ),
     };
     const mv = new Multiverse(level);
@@ -170,8 +176,14 @@ describe("Multiverse - correlated entities across universes", () => {
       axes: [{ id: "shared", size: 3 }],
       player: { x: 0, y: 3 },
       boxes: {
-        a: variantEntity("shared", (v) => ({ x: 1 + v, y: 3 })),
-        b: variantEntity("shared", (v) => ({ x: 5, y: 1 + v })),
+        a: variantEntity(
+          "shared",
+          [0, 1, 2].map((v) => ({ x: 1 + v, y: 3 })),
+        ),
+        b: variantEntity(
+          "shared",
+          [0, 1, 2].map((v) => ({ x: 5, y: 1 + v })),
+        ),
       },
     };
     const mv = new Multiverse(level);
@@ -198,7 +210,10 @@ describe("Multiverse - solvedMultiplicity", () => {
       axes: [{ id: "a", size: 3 }],
       player: { x: 5, y: 5 }, // far away, never moves
       boxes: {
-        b: variantEntity("a", (v) => (v === 0 ? { x: 0, y: 0 } : { x: v, y: 4 })),
+        b: variantEntity(
+          "a",
+          [0, 1, 2].map((v) => (v === 0 ? { x: 0, y: 0 } : { x: v, y: 4 })),
+        ),
       },
     };
     const mv = new Multiverse(level);
