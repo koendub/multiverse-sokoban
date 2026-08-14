@@ -6,29 +6,30 @@ const FLOOR_DARK = 0x24252c;
 const WALL = 0x494a56;
 const GOAL_RING = 0xf4c542;
 
-export interface PixiBoardOptions {
-  readonly tileSize?: number;
-}
-
 /**
  * Vanilla Pixi.js renderer for one Scene. Knows nothing about the
  * simulation - it only draws the plain cell/ghost data in Scene - so the
  * same class can back several boards on screen at once (one per StateGroup)
  * simply by mounting one PixiBoard per container.
+ *
+ * `tileSize` is mutable via `update()` rather than fixed at mount time:
+ * callers that resize a board (e.g. the split view shrinking tiles as more
+ * boards join) should keep reusing the same PixiBoard/canvas instead of
+ * tearing down and recreating the whole Application, which is what causes
+ * a visible flash.
  */
 export class PixiBoard {
   private readonly app: Application;
   private readonly root: Container;
-  private readonly tileSize: number;
+  private tileSize: number;
 
-  private constructor(app: Application, root: Container, tileSize: number) {
+  private constructor(app: Application, root: Container) {
     this.app = app;
     this.root = root;
-    this.tileSize = tileSize;
+    this.tileSize = 48;
   }
 
-  static async mount(container: HTMLElement, options: PixiBoardOptions = {}): Promise<PixiBoard> {
-    const tileSize = options.tileSize ?? 48;
+  static async mount(container: HTMLElement): Promise<PixiBoard> {
     const app = new Application();
     await app.init({
       backgroundAlpha: 0,
@@ -40,10 +41,11 @@ export class PixiBoard {
 
     const root = new Container();
     app.stage.addChild(root);
-    return new PixiBoard(app, root, tileSize);
+    return new PixiBoard(app, root);
   }
 
-  update(scene: Scene): void {
+  update(scene: Scene, tileSize: number): void {
+    this.tileSize = tileSize;
     const size = this.tileSize;
     this.app.renderer.resize(scene.width * size, scene.height * size);
 

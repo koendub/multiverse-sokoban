@@ -1,4 +1,4 @@
-import type { AxisId, AxisValue, EntityId, Vec2 } from "../multiverse/types.ts";
+import type { AxisId, AxisValue, EntityId, UniverseKey, Vec2 } from "../multiverse/types.ts";
 import type { Axis } from "../multiverse/entities.ts";
 import { fullDomain } from "../multiverse/entities.ts";
 import type { EntitySpec } from "../multiverse/entities.ts";
@@ -60,4 +60,20 @@ export function buildLevel(level: LevelDef): BuiltLevel {
 /** Product of every axis's domain size - the theoretical universe count. For display only. */
 export function totalUniverseCount(level: LevelDef): bigint {
   return level.axes.reduce((total, axis) => total * BigInt(axis.size), 1n);
+}
+
+/**
+ * The `index`th concrete universe (0-based), as a full per-axis key -
+ * computed on demand via mixed-radix decomposition, never by enumerating
+ * the ones before it. Distinct indices in `[0, totalUniverseCount(level))`
+ * always produce distinct keys.
+ */
+export function universeKeyAt(level: LevelDef, index: number): UniverseKey {
+  let remaining = index;
+  const key: Record<AxisId, AxisValue> = {};
+  for (const axis of level.axes) {
+    key[axis.id] = remaining % axis.size;
+    remaining = Math.floor(remaining / axis.size);
+  }
+  return key;
 }

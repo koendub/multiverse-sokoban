@@ -9,29 +9,34 @@ export interface GameBoardProps {
 }
 
 /**
- * Mounts one Pixi canvas and keeps it in sync with `scene`. This component
- * only knows about the plain Scene type, so rendering more than one board
- * side by side later (e.g. one per StateGroup) just means rendering more
- * than one <GameBoard>, each with its own Scene.
+ * Mounts one Pixi canvas and keeps it in sync with `scene`/`tileSize`. This
+ * component only knows about the plain Scene type, so rendering more than
+ * one board side by side (e.g. one per StateGroup) just means rendering
+ * more than one <GameBoard>, each with its own Scene.
+ *
+ * Mounts exactly once per component instance - `tileSize` changes are
+ * pushed into the existing PixiBoard via `update()` rather than
+ * remounting, so a board that's just being resized (e.g. the split view
+ * gaining a board and shrinking tiles to fit) never flashes empty.
  */
-export function GameBoard({ scene, tileSize, className }: GameBoardProps) {
+export function GameBoard({ scene, tileSize = 48, className }: GameBoardProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<PixiBoard | null>(null);
-  const latestScene = useRef(scene);
-  latestScene.current = scene;
+  const latest = useRef({ scene, tileSize });
+  latest.current = { scene, tileSize };
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     let cancelled = false;
 
-    PixiBoard.mount(container, { tileSize }).then((board) => {
+    PixiBoard.mount(container).then((board) => {
       if (cancelled) {
         board.destroy();
         return;
       }
       boardRef.current = board;
-      board.update(latestScene.current);
+      board.update(latest.current.scene, latest.current.tileSize);
     });
 
     return () => {
@@ -39,11 +44,11 @@ export function GameBoard({ scene, tileSize, className }: GameBoardProps) {
       boardRef.current?.destroy();
       boardRef.current = null;
     };
-  }, [tileSize]);
+  }, []);
 
   useEffect(() => {
-    boardRef.current?.update(scene);
-  }, [scene]);
+    boardRef.current?.update(scene, tileSize);
+  }, [scene, tileSize]);
 
   return <div ref={containerRef} className={className} />;
 }
