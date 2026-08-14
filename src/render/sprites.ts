@@ -15,6 +15,8 @@ export interface SpriteAtlas {
   readonly wallEdgeVertical: Texture;
   /** 128x256, for a wall cell not on the level's outer boundary. */
   readonly wallMid: Texture;
+  /** 128x256, short corner pillar for the level's four corner cells. Flip horizontally for the right-side corners, same as `wallEdgeVertical`. */
+  readonly wallCorner: Texture;
   /** 128x256, same bottom-anchor treatment as walls. Tinted per entity at draw time rather than using multiple box textures. */
   readonly box: Texture;
   /** 128x256 each, player facing right/up/down. Facing left reuses `playerRight` flipped horizontally. */
@@ -36,6 +38,7 @@ export function loadSpriteAtlas(): Promise<SpriteAtlas> {
     goalFloor: slice(base, 4 * CELL, 0, CELL, CELL),
     wallEdge: slice(base, 0, CELL, CELL, TALL),
     wallEdgeVertical: slice(base, CELL, CELL, CELL, TALL),
+    wallCorner: slice(base, 2 * CELL, CELL, CELL, TALL),
     wallMid: slice(base, CELL, CELL * 3, CELL, TALL),
     box: slice(base, 0, CELL * 3, CELL, TALL),
     playerRight: slice(base, 2 * CELL, CELL * 3, CELL, TALL),
