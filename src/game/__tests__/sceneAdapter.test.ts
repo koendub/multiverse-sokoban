@@ -41,14 +41,14 @@ function sortByPosition(points: readonly { x: number; y: number }[]) {
 describe("buildSplitScenesByPlayerPosition", () => {
   it("returns a single scene while every player position agrees", () => {
     const mv = new Multiverse(level);
-    expect(buildSplitScenesByPlayerPosition(mv, identify(mv))).toHaveLength(1);
+    expect(buildSplitScenesByPlayerPosition(mv, identify(mv), "down")).toHaveLength(1);
   });
 
   it("splits into one scene per distinct player position once they diverge", () => {
     const mv = new Multiverse(level);
     mv.step("Right"); // blocked (wall behind box) for universe 0, walks through for universe 1
 
-    const scenes = buildSplitScenesByPlayerPosition(mv, identify(mv));
+    const scenes = buildSplitScenesByPlayerPosition(mv, identify(mv), "down");
     expect(scenes).toHaveLength(2);
     for (const { scene } of scenes) expect(scene.player.positions).toHaveLength(1);
 
@@ -63,8 +63,8 @@ describe("buildSplitScenesByPlayerPosition", () => {
     const mv = new Multiverse(level);
     mv.step("Right");
 
-    const combined = sortByPosition(buildCombinedScene(mv).player.positions);
-    const split = sortByPosition(buildSplitScenesByPlayerPosition(mv, identify(mv)).map(({ scene }) => scene.player.positions[0]));
+    const combined = sortByPosition(buildCombinedScene(mv, "down").player.positions);
+    const split = sortByPosition(buildSplitScenesByPlayerPosition(mv, identify(mv), "down").map(({ scene }) => scene.player.positions[0]));
     expect(split).toEqual(combined);
   });
 });
@@ -72,15 +72,15 @@ describe("buildSplitScenesByPlayerPosition", () => {
 describe("buildSingleUniverseScene", () => {
   it("shows exactly one position per layer", () => {
     const mv = new Multiverse(level);
-    const scene = buildSingleUniverseScene(mv, universeKeyAt(level, 0));
+    const scene = buildSingleUniverseScene(mv, universeKeyAt(level, 0), "down");
     expect(scene.player.positions).toHaveLength(1);
     for (const entity of scene.entities) expect(entity.positions).toHaveLength(1);
   });
 
   it("reflects each universe's own box position", () => {
     const mv = new Multiverse(level);
-    const scene0 = buildSingleUniverseScene(mv, universeKeyAt(level, 0));
-    const scene1 = buildSingleUniverseScene(mv, universeKeyAt(level, 1));
+    const scene0 = buildSingleUniverseScene(mv, universeKeyAt(level, 0), "down");
+    const scene1 = buildSingleUniverseScene(mv, universeKeyAt(level, 1), "down");
     expect(scene0.entities[0].positions[0]).toEqual({ x: 2, y: 1 });
     expect(scene1.entities[0].positions[0]).toEqual({ x: 2, y: 2 });
   });

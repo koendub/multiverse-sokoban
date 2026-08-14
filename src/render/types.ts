@@ -28,11 +28,15 @@ export interface GhostLayer {
  * board per StateGroup shown side by side, depending on what the caller
  * builds.
  */
+/** Which way the player sprite should face - purely a rendering concern (the last direction input), not simulation state. */
+export type Facing = "up" | "down" | "left" | "right";
+
 export interface Scene {
   readonly width: number;
   readonly height: number;
   readonly walls: readonly Point[];
   readonly goals: readonly Point[];
   readonly player: GhostLayer;
+  readonly playerFacing: Facing;
   readonly entities: readonly GhostLayer[];
 }

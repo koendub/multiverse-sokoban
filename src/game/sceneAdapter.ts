@@ -2,7 +2,7 @@ import type { Multiverse } from "../engine/multiverse/Multiverse.ts";
 import { entityOutcomes } from "../engine/multiverse/StateGroup.ts";
 import type { StateGroup } from "../engine/multiverse/StateGroup.ts";
 import type { UniverseKey } from "../engine/multiverse/types.ts";
-import type { GhostLayer, Point, Scene } from "../render/types.ts";
+import type { Facing, GhostLayer, Point, Scene } from "../render/types.ts";
 import type { IdentifiedGroup } from "./groupIdentity.ts";
 
 // This is the only module that imports from both ../engine and ../render:
@@ -11,15 +11,21 @@ import type { IdentifiedGroup } from "./groupIdentity.ts";
 // ever import the engine directly.
 
 const PLAYER_COLOR = 0x60a5fa;
-const BOX_PALETTE = [0xf59e0b, 0xf43f5e, 0x10b981, 0x8b5cf6, 0x38bdf8, 0xfb7185, 0xa3e635, 0xfacc15];
+
+/** Tint applied to the single box sprite, one color per box entity (up to 9 before repeating). */
+const BOX_PALETTE = [0xef4444, 0x3b82f6, 0x22c55e, 0xf97316, 0xa855f7, 0x06b6d4, 0xeab308, 0xec4899, 0x14b8a6];
 
 /**
  * Builds one Scene that overlays the given groups: for the player and each
  * box entity, every distinct position it could be in - across those groups
  * - is collected and drawn translucently on top of each other. Groups that
  * already agree contribute the same position once.
+ *
+ * `facing` (the last direction input) isn't simulation state - it's purely
+ * which way the player sprite should point - so it's passed in by the
+ * caller (see useMultiverse.ts) rather than derived here.
  */
-function buildSceneForGroups(mv: Multiverse, groups: readonly StateGroup[]): Scene {
+function buildSceneForGroups(mv: Multiverse, groups: readonly StateGroup[], facing: Facing): Scene {
   const player = dedupeLayer("player", PLAYER_COLOR, groups.map((g) => g.player));
 
   const entities: GhostLayer[] = [...mv.entities.entries()].map(([entityId, spec], index) => {
@@ -33,13 +39,14 @@ function buildSceneForGroups(mv: Multiverse, groups: readonly StateGroup[]): Sce
     walls: mv.grid.allWalls(),
     goals: mv.grid.allGoals(),
     player,
+    playerFacing: facing,
     entities,
   };
 }
 
 /** View 1: every currently-represented universe overlaid into a single board. */
-export function buildCombinedScene(mv: Multiverse): Scene {
-  return buildSceneForGroups(mv, mv.getGroups());
+export function buildCombinedScene(mv: Multiverse, facing: Facing): Scene {
+  return buildSceneForGroups(mv, mv.getGroups(), facing);
 }
 
 export interface IdentifiedScene {
@@ -60,7 +67,7 @@ export interface IdentifiedScene {
  * follows `orderedGroups`' own (already-stable) order, and each cluster's
  * id is the smallest id among its member groups.
  */
-export function buildSplitScenesByPlayerPosition(mv: Multiverse, orderedGroups: readonly IdentifiedGroup[]): IdentifiedScene[] {
+export function buildSplitScenesByPlayerPosition(mv: Multiverse, orderedGroups: readonly IdentifiedGroup[], facing: Facing): IdentifiedScene[] {
   const order: string[] = [];
   const clusters = new Map<string, { id: number; groups: StateGroup[] }>();
 
@@ -78,12 +85,12 @@ export function buildSplitScenesByPlayerPosition(mv: Multiverse, orderedGroups: 
 
   return order.map((key) => {
     const cluster = clusters.get(key)!;
-    return { id: cluster.id, scene: buildSceneForGroups(mv, cluster.groups) };
+    return { id: cluster.id, scene: buildSceneForGroups(mv, cluster.groups, facing) };
   });
 }
 
 /** View 3: one specific, fully-resolved universe - never more than one position per layer. */
-export function buildSingleUniverseScene(mv: Multiverse, key: UniverseKey): Scene {
+export function buildSingleUniverseScene(mv: Multiverse, key: UniverseKey, facing: Facing): Scene {
   const view = mv.getUniverseView(key);
 
   const player: GhostLayer = { id: "player", color: PLAYER_COLOR, positions: [view.player] };
@@ -99,6 +106,7 @@ export function buildSingleUniverseScene(mv: Multiverse, key: UniverseKey): Scen
     walls: mv.grid.allWalls(),
     goals: mv.grid.allGoals(),
     player,
+    playerFacing: facing,
     entities,
   };
 }

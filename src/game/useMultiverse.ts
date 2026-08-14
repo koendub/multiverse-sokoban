@@ -9,7 +9,7 @@ import { matchGroupIdentities } from "./groupIdentity.ts";
 import type { IdentifiedGroup } from "./groupIdentity.ts";
 import { computeStats } from "./stats.ts";
 import type { MultiverseStats } from "./stats.ts";
-import type { Scene } from "../render/types.ts";
+import type { Facing, Scene } from "../render/types.ts";
 
 export interface MultiverseSnapshot {
   readonly combinedScene: Scene;
@@ -25,14 +25,23 @@ interface IdentityState {
   nextId: number;
 }
 
-function snapshot(multiverse: Multiverse, level: LevelDef, universeIndex: number, identity: IdentityState): MultiverseSnapshot {
+const FACING_BY_DIRECTION: Readonly<Record<DirectionName, Facing>> = {
+  Up: "up",
+  Down: "down",
+  Left: "left",
+  Right: "right",
+};
+
+const DEFAULT_FACING: Facing = "down";
+
+function snapshot(multiverse: Multiverse, level: LevelDef, universeIndex: number, identity: IdentityState, facing: Facing): MultiverseSnapshot {
   const matchedGroups = matchGroupIdentities(identity.groups, multiverse.getGroups(), () => identity.nextId++);
   identity.groups = matchedGroups;
 
   return {
-    combinedScene: buildCombinedScene(multiverse),
-    splitScenes: buildSplitScenesByPlayerPosition(multiverse, matchedGroups),
-    singleUniverseScene: buildSingleUniverseScene(multiverse, universeKeyAt(level, universeIndex)),
+    combinedScene: buildCombinedScene(multiverse, facing),
+    splitScenes: buildSplitScenesByPlayerPosition(multiverse, matchedGroups, facing),
+    singleUniverseScene: buildSingleUniverseScene(multiverse, universeKeyAt(level, universeIndex), facing),
     stats: computeStats(multiverse, level),
     solved: multiverse.isSolved(),
   };
@@ -52,7 +61,9 @@ function snapshot(multiverse: Multiverse, level: LevelDef, universeIndex: number
  * cycling it goes through the same setState path as step/undo/restart.
  *
  * Also tracks a move counter (steps taken, minus undone ones), so the
- * caller can report how many moves a solve took via `onSolved`.
+ * caller can report how many moves a solve took via `onSolved`, and the
+ * last direction pressed (purely for which way the player sprite faces -
+ * not simulation state, so it lives here rather than in the engine).
  */
 export function useMultiverse(level: LevelDef, onSolved?: (moves: number) => void) {
   const multiverseRef = useRef<Multiverse | null>(null);
@@ -62,16 +73,19 @@ export function useMultiverse(level: LevelDef, onSolved?: (moves: number) => voi
   const identityRef = useRef<IdentityState | null>(null);
   if (!identityRef.current) identityRef.current = { groups: [], nextId: 0 };
 
+  const facingRef = useRef<Facing>(DEFAULT_FACING);
+
   const totalUniverses = Math.max(1, Number(totalUniverseCount(level)));
   const moveCountRef = useRef(0);
   const [universeIndex, setUniverseIndex] = useState(0);
-  const [state, setState] = useState(() => snapshot(multiverse, level, universeIndex, identityRef.current!));
+  const [state, setState] = useState(() => snapshot(multiverse, level, universeIndex, identityRef.current!, facingRef.current));
 
   const step = useCallback(
     (dir: DirectionName) => {
       multiverse.step(dir);
       moveCountRef.current += 1;
-      const next = snapshot(multiverse, level, universeIndex, identityRef.current!);
+      facingRef.current = FACING_BY_DIRECTION[dir];
+      const next = snapshot(multiverse, level, universeIndex, identityRef.current!, facingRef.current);
       setState(next);
       if (next.solved) onSolved?.(moveCountRef.current);
     },
@@ -81,7 +95,7 @@ export function useMultiverse(level: LevelDef, onSolved?: (moves: number) => voi
   const undo = useCallback(() => {
     if (multiverse.undo()) {
       moveCountRef.current = Math.max(0, moveCountRef.current - 1);
-      setState(snapshot(multiverse, level, universeIndex, identityRef.current!));
+      setState(snapshot(multiverse, level, universeIndex, identityRef.current!, facingRef.current));
     }
   }, [multiverse, level, universeIndex]);
 
@@ -89,14 +103,15 @@ export function useMultiverse(level: LevelDef, onSolved?: (moves: number) => voi
     multiverse.restart();
     moveCountRef.current = 0;
     identityRef.current = { groups: [], nextId: 0 }; // a fresh playthrough starts identity numbering over
-    setState(snapshot(multiverse, level, universeIndex, identityRef.current));
+    facingRef.current = DEFAULT_FACING;
+    setState(snapshot(multiverse, level, universeIndex, identityRef.current, facingRef.current));
   }, [multiverse, level, universeIndex]);
 
   const goToUniverse = useCallback(
     (index: number) => {
       const normalized = ((index % totalUniverses) + totalUniverses) % totalUniverses;
       setUniverseIndex(normalized);
-      setState(snapshot(multiverse, level, normalized, identityRef.current!));
+      setState(snapshot(multiverse, level, normalized, identityRef.current!, facingRef.current));
     },
     [multiverse, level, totalUniverses],
   );
