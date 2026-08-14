@@ -1,9 +1,8 @@
-import { Application, Container, FillGradient, Graphics, Sprite, Texture } from "pixi.js";
+import { Application, Container, Sprite, Texture } from "pixi.js";
 import type { Facing, GhostLayer, Point, Scene } from "./types.ts";
 import { loadSpriteAtlas, pickFloorIndex } from "./sprites.ts";
 import type { SpriteAtlas } from "./sprites.ts";
 
-const GROUND_FADE_COLOR = "38,41,48"; // rgb, matches the sheet's dark floor tone
 const MOVE_DURATION_MS = 100;
 
 /** A player/box sprite that persists across updates, remembering which cell it's currently assigned to. */
@@ -89,13 +88,12 @@ export class PixiBoard {
     const now = performance.now();
 
     // Wall (and box) sprites are 2 tiles tall and anchored to their cell's
-    // bottom edge, so their top half pokes up into the row above - for a
-    // cell at the very top/left/etc. of the grid that would otherwise be
-    // clipped by the canvas edge. Padding every side by half a tile, plus a
-    // fading ground edge in that padding, gives that overflow (and the
-    // grid's true edge in general) somewhere to go instead of a hard cut.
-    this.app.renderer.resize(scene.width * size + size, scene.height * size + size);
-    this.root.position.set(half, half);
+    // bottom edge, so their top half pokes up into the row above - for row
+    // 0 that would otherwise be clipped by the canvas's top edge. Only the
+    // top gets padded by half a tile to give that overflow somewhere to go;
+    // the other three sides sit flush against the grid.
+    this.app.renderer.resize(scene.width * size, scene.height * size + half);
+    this.root.position.set(0, half);
 
     for (const child of this.staticChildren) child.destroy();
     this.staticChildren = [];
@@ -103,9 +101,6 @@ export class PixiBoard {
     const wallSet = new Set(scene.walls.map((p) => key(p)));
     const goalSet = new Set(scene.goals.map((p) => key(p)));
 
-    const fade = drawGroundFade(scene.width, scene.height, size);
-    this.root.addChild(fade);
-    this.staticChildren.push(fade);
     this.drawFloor(scene.width, scene.height, wallSet, goalSet, size);
 
     // Everything with height (walls, boxes, the player) is drawn in a single
@@ -120,7 +115,11 @@ export class PixiBoard {
     for (const cell of scene.walls) {
       const { texture, flip } = pickWallSprite(cell, scene.width, scene.height, this.atlas);
       const sprite = new Sprite(texture);
-      placeTall(sprite, cell, size, flip);
+      // Bottom-row walls (including the bottom corners) sit half a tile
+      // higher than every other tile - a deliberate visual offset, not tied
+      // to the top-padding overflow handling above.
+      const lift = cell.y === scene.height - 1 ? half : 0;
+      placeTall(sprite, cell, size, flip, lift);
       this.staticChildren.push(sprite);
       depthSorted.push({ row: cell.y, display: sprite });
     }
@@ -305,8 +304,12 @@ function pickPlayerSprite(facing: Facing, atlas: SpriteAtlas): { texture: Textur
  * "did it move cells" instead of also tripping on "did it change facing" -
  * with a top-left anchor, flipping shifts x by a whole tile width even when
  * the cell doesn't change, which could cancel out (or fake) a real move.
+ *
+ * `lift` raises the sprite by that many pixels beyond the normal bottom
+ * anchor - used for bottom-row walls, which sit half a tile higher than
+ * the rest.
  */
-function placeTall(sprite: Sprite, cell: Point, size: number, flip = false): void {
+function placeTall(sprite: Sprite, cell: Point, size: number, flip = false, lift = 0): void {
   const width = size;
   const height = size * 2;
   const scaleX = width / sprite.texture.width;
@@ -314,38 +317,10 @@ function placeTall(sprite: Sprite, cell: Point, size: number, flip = false): voi
   sprite.anchor.set(0.5, 1);
   sprite.scale.set(flip ? -scaleX : scaleX, scaleY);
   sprite.x = cell.x * size + size / 2;
-  sprite.y = (cell.y + 1) * size;
+  sprite.y = (cell.y + 1) * size - lift;
 }
 
 /** Ghost alpha shrinks as more positions share a layer, but never fades past legibility. */
 function ghostAlpha(count: number): number {
   return Math.max(0.3, 1 / count);
-}
-
-/**
- * A half-tile band around the grid, fading from the ground tone (at the
- * grid's edge) to fully transparent (at the outer edge) - so tall sprites
- * poking past the grid boundary, and the boundary itself, don't end in a
- * hard cut. On the top edge this is normally hidden again by any wall
- * sprite poking up from row 0, which is intended: the back wall shouldn't
- * fade.
- */
-function drawGroundFade(gridWidth: number, gridHeight: number, size: number): Graphics {
-  const g = new Graphics();
-  const half = size / 2;
-  const w = gridWidth * size;
-  const h = gridHeight * size;
-  const opaque = `rgba(${GROUND_FADE_COLOR},1)`;
-  const clear = `rgba(${GROUND_FADE_COLOR},0)`;
-
-  g.rect(-half, -half, w + size, half)
-    .fill(new FillGradient({ type: "linear", start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, colorStops: [{ offset: 0, color: clear }, { offset: 1, color: opaque }] }));
-  g.rect(-half, h, w + size, half)
-    .fill(new FillGradient({ type: "linear", start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, colorStops: [{ offset: 0, color: opaque }, { offset: 1, color: clear }] }));
-  g.rect(-half, -half, half, h + size)
-    .fill(new FillGradient({ type: "linear", start: { x: 0, y: 0 }, end: { x: 1, y: 0 }, colorStops: [{ offset: 0, color: clear }, { offset: 1, color: opaque }] }));
-  g.rect(w, -half, half, h + size)
-    .fill(new FillGradient({ type: "linear", start: { x: 0, y: 0 }, end: { x: 1, y: 0 }, colorStops: [{ offset: 0, color: opaque }, { offset: 1, color: clear }] }));
-
-  return g;
 }
