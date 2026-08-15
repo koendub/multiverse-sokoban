@@ -9,10 +9,17 @@ import { useViewKeys } from "../game/useViewKeys.ts";
 import type { ViewMode } from "../game/useViewKeys.ts";
 import { starTierForMoves } from "../game/starRating.ts";
 import { firstAvailableView, isViewAvailable } from "../game/viewAvailability.ts";
+import { useElementSize } from "../game/useElementSize.ts";
+import { fitTileSize } from "../game/fitTileSize.ts";
 import { GameBoard } from "./GameBoard.tsx";
 import { MultiBoardGrid } from "./MultiBoardGrid.tsx";
 import { TopBar } from "./TopBar.tsx";
 import { StarIcon } from "./StarIcon.tsx";
+
+/** Tile size used before the board area's real size has been measured (see useElementSize.ts). */
+const DEFAULT_TILE_SIZE = 48;
+/** The bordered box around the active view has a 1px border on every side. */
+const BOARD_BORDER_PX = 2;
 
 export interface LevelPlayerProps {
   readonly levelNumber: number;
@@ -92,8 +99,13 @@ export function LevelPlayer({ levelNumber, levelName, levelText, levelGreat, lev
   useAdvanceKey(solved, onAdvance);
   useViewKeys(selectView);
 
+  const [boardAreaRef, boardAreaSize] = useElementSize<HTMLDivElement>();
+  const availableSize = { width: boardAreaSize.width - BOARD_BORDER_PX, height: boardAreaSize.height - BOARD_BORDER_PX };
+  const combinedTileSize = fitTileSize(combinedScene.width, combinedScene.height, availableSize, DEFAULT_TILE_SIZE);
+  const singleTileSize = fitTileSize(singleUniverseScene.width, singleUniverseScene.height, availableSize, DEFAULT_TILE_SIZE);
+
   return (
-    <div className="flex min-h-svh flex-col items-center gap-6 bg-slate-950 px-4 pb-8 pt-20 text-slate-100">
+    <div className="flex h-svh flex-col items-center gap-6 overflow-hidden bg-slate-950 px-4 pb-8 pt-20 text-slate-100">
       <TopBar
         levelNumber={levelNumber}
         levelName={levelName}
@@ -111,31 +123,41 @@ export function LevelPlayer({ levelNumber, levelName, levelText, levelGreat, lev
 
       {levelText && <p className="max-w-prose text-center text-sm text-slate-400">{levelText}</p>}
 
-      <div className="relative overflow-hidden rounded-xl border border-slate-700 shadow-lg">
-        {/*
-         * All three views stay mounted at all times, switching only via
-         * `hidden` - this keeps each one's Pixi canvas(es) alive across
-         * mode switches, so flipping between 1/2/3 never tears down and
-         * re-initializes a board (which is what caused the flicker).
-         */}
-        <div className={viewMode === 1 ? undefined : "hidden"}>
-          <GameBoard scene={combinedScene} />
-        </div>
-        <div className={viewMode === 2 ? undefined : "hidden"}>
-          <MultiBoardGrid scenes={splitScenes} />
-        </div>
-        <div className={viewMode === 3 ? undefined : "hidden"}>
-          <GameBoard scene={singleUniverseScene} />
-        </div>
-        {solved && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-950/85 text-center">
-            <StarIcon tier={starTierForMoves(moves, { great: levelGreat, perfect: levelPerfect })} className="h-10 w-10" />
-            <span className="text-xl font-semibold text-emerald-400">Congratz!</span>
-            <span className="text-sm text-slate-200">
-              {hasNextLevel ? "Press space to go to the next level" : "You've completed every level!"}
-            </span>
+      {/*
+       * This wrapper is the sizing source for the board(s) below: it's a
+       * flex child that naturally shrinks to whatever room is left after
+       * the top bar's reserved padding, the optional blurb, and the gaps
+       * between them, and `useElementSize` reports its true pixel size so
+       * `fitTileSize`/`MultiBoardGrid` can pick the largest tile size that
+       * still fits without overflowing.
+       */}
+      <div ref={boardAreaRef} className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden">
+        <div className="relative overflow-hidden rounded-xl border border-slate-700 shadow-lg">
+          {/*
+           * All three views stay mounted at all times, switching only via
+           * `hidden` - this keeps each one's Pixi canvas(es) alive across
+           * mode switches, so flipping between 1/2/3 never tears down and
+           * re-initializes a board (which is what caused the flicker).
+           */}
+          <div className={viewMode === 1 ? undefined : "hidden"}>
+            <GameBoard scene={combinedScene} tileSize={combinedTileSize} />
           </div>
-        )}
+          <div className={viewMode === 2 ? undefined : "hidden"}>
+            <MultiBoardGrid scenes={splitScenes} availableSize={availableSize} />
+          </div>
+          <div className={viewMode === 3 ? undefined : "hidden"}>
+            <GameBoard scene={singleUniverseScene} tileSize={singleTileSize} />
+          </div>
+          {solved && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-950/85 text-center">
+              <StarIcon tier={starTierForMoves(moves, { great: levelGreat, perfect: levelPerfect })} className="h-10 w-10" />
+              <span className="text-xl font-semibold text-emerald-400">Congratz!</span>
+              <span className="text-sm text-slate-200">
+                {hasNextLevel ? "Press space to go to the next level" : "You've completed every level!"}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
