@@ -38,11 +38,14 @@ export interface LevelJson {
   readonly grid: readonly string[];
   readonly axes?: readonly LevelJsonAxis[];
   readonly boxes?: Readonly<Record<string, LevelJsonBox>>;
+  /** Optional blurb shown above the game render. Omit for no text at all. */
+  readonly text?: string;
 }
 
 export interface ParsedLevel {
   readonly number: number;
   readonly name: string;
+  readonly text?: string;
   readonly level: LevelDef;
 }
 
@@ -138,10 +141,12 @@ export function parseLevelJson(json: LevelJson): ParsedLevel {
   const context = `Level ${json.number}`;
   if (typeof json.name !== "string" || !json.name) fail(context, "missing 'name'");
 
+  if (json.text !== undefined && typeof json.text !== "string") fail(context, "'text' must be a string if present");
+
   const { width, height, walls, goals, player } = parseGrid(json, context);
   const axes = parseAxes(json, context);
   const boxes = parseBoxes(json, axes, { width, height }, context);
 
   const level: LevelDef = { width, height, walls, goals, axes, player, boxes };
-  return { number: json.number, name: json.name, level };
+  return { number: json.number, name: json.name, text: json.text, level };
 }

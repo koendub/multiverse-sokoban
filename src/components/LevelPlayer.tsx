@@ -13,6 +13,8 @@ import { TopBar } from "./TopBar.tsx";
 export interface LevelPlayerProps {
   readonly levelNumber: number;
   readonly levelName: string;
+  /** Optional blurb shown above the game render. Nothing is shown if omitted. */
+  readonly levelText?: string;
   readonly level: LevelDef;
   readonly hasNextLevel: boolean;
   readonly onAdvance: () => void;
@@ -24,7 +26,7 @@ export interface LevelPlayerProps {
  * `key={levelNumber}` from the parent) so its Multiverse resets cleanly
  * instead of trying to migrate state between unrelated levels.
  */
-export function LevelPlayer({ levelNumber, levelName, level, hasNextLevel, onAdvance, onSolved }: LevelPlayerProps) {
+export function LevelPlayer({ levelNumber, levelName, levelText, level, hasNextLevel, onAdvance, onSolved }: LevelPlayerProps) {
   const {
     combinedScene,
     splitScenes,
@@ -32,7 +34,6 @@ export function LevelPlayer({ levelNumber, levelName, level, hasNextLevel, onAdv
     stats,
     solved,
     universeIndex,
-    totalUniverses,
     step,
     undo,
     restart,
@@ -63,18 +64,16 @@ export function LevelPlayer({ levelNumber, levelName, level, hasNextLevel, onAdv
 
   return (
     <div className="flex min-h-svh flex-col items-center gap-6 bg-slate-950 px-4 pb-8 pt-20 text-slate-100">
-      <TopBar levelNumber={levelNumber} levelName={levelName} stats={stats} view={viewMode} onSelectView={selectView} />
+      <TopBar
+        levelNumber={levelNumber}
+        levelName={levelName}
+        stats={stats}
+        view={viewMode}
+        onSelectView={selectView}
+        universeIndex={universeIndex}
+      />
 
-      <header className="text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Multiverse Puzzles</h1>
-        <p className="mt-1 text-sm text-slate-400">W A S D to move · R to undo · F to restart · 1 2 3 to change view</p>
-      </header>
-
-      {viewMode === 3 && (
-        <p className="text-sm text-slate-400">
-          Viewing universe {universeIndex + 1} of {totalUniverses}
-        </p>
-      )}
+      {levelText && <p className="max-w-prose text-center text-sm text-slate-400">{levelText}</p>}
 
       <div className="relative overflow-hidden rounded-xl border border-slate-700 shadow-lg">
         {/*

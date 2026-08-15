@@ -7,6 +7,8 @@ export interface TopBarProps {
   readonly stats: MultiverseStats;
   readonly view: ViewMode;
   readonly onSelectView: (view: ViewMode) => void;
+  /** Which universe is currently shown in the single-universe view (0-based). Only meaningful when `view === 3`. */
+  readonly universeIndex: number;
 }
 
 function formatBig(n: bigint): string {
@@ -54,11 +56,12 @@ function ViewIcon({ mode }: { mode: ViewMode }) {
  * content (not the viewport width), with slanted sides that are wider at
  * the top than the bottom.
  */
-export function TopBar({ levelNumber, levelName, stats, view, onSelectView }: TopBarProps) {
+export function TopBar({ levelNumber, levelName, stats, view, onSelectView, universeIndex }: TopBarProps) {
   const items = [
     { label: "Level", value: `${levelNumber} · ${levelName}` },
     { label: "State Groups", value: stats.groupCount.toLocaleString("en-US") },
-    { label: "Unique Universes", value: formatBig(stats.totalUniverses) },
+    // In single-universe view, this slot shows which universe is being viewed instead of the total count.
+    { label: "Unique Universes", value: view === 3 ? `${universeIndex + 1}/${formatBig(stats.totalUniverses)}` : formatBig(stats.totalUniverses) },
     { label: "Completed", value: `${formatBig(stats.completedUniverses)} / ${formatBig(stats.totalUniverses)}` },
   ];
 

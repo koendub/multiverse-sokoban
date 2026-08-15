@@ -56,6 +56,7 @@ export function GameApp() {
         key={current.number}
         levelNumber={current.number}
         levelName={current.name}
+        levelText={current.text}
         level={current.level}
         hasNextLevel={Boolean(next)}
         onAdvance={goToNextLevel}
