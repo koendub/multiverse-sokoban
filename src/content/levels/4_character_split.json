@@ -1,7 +1,7 @@
 {
   "number": 4,
   "name": "Character Split",
-  "text": "You have used the merged view (key 1) and the per-universe view (key 3) so far. But there is one more view, the per-character view (key 2). The per-character view shows a different view for each group of universes where your character is in the same position. Try it in this level, if your character is never in more than 1 location at a time, you don't have the optimal solution yet.",
+  "text": "You have used the merged view (key 1) and the per-universe view (key 3) so far. But there is one more view, the per-character view (key 2). The per-character view shows a different view for each group of universes where your character is in the same position. Try it in this level, if your character is never in more than 1 location at a time, you don't have the optimal solution yet. (Remember you can press F to restart a level)",
   "grid": [
     "#######",
     "#....G#",

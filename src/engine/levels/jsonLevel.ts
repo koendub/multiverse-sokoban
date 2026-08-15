@@ -40,12 +40,17 @@ export interface LevelJson {
   readonly boxes?: Readonly<Record<string, LevelJsonBox>>;
   /** Optional blurb shown above the game render. Omit for no text at all. */
   readonly text?: string;
+  /** Move counts for the silver/gold star thresholds - see starRating.ts. Both optional; omitting one just makes that tier unreachable. */
+  readonly great?: number;
+  readonly perfect?: number;
 }
 
 export interface ParsedLevel {
   readonly number: number;
   readonly name: string;
   readonly text?: string;
+  readonly great?: number;
+  readonly perfect?: number;
   readonly level: LevelDef;
 }
 
@@ -142,11 +147,13 @@ export function parseLevelJson(json: LevelJson): ParsedLevel {
   if (typeof json.name !== "string" || !json.name) fail(context, "missing 'name'");
 
   if (json.text !== undefined && typeof json.text !== "string") fail(context, "'text' must be a string if present");
+  if (json.great !== undefined && (!Number.isInteger(json.great) || json.great < 0)) fail(context, "'great' must be a non-negative integer if present");
+  if (json.perfect !== undefined && (!Number.isInteger(json.perfect) || json.perfect < 0)) fail(context, "'perfect' must be a non-negative integer if present");
 
   const { width, height, walls, goals, player } = parseGrid(json, context);
   const axes = parseAxes(json, context);
   const boxes = parseBoxes(json, axes, { width, height }, context);
 
   const level: LevelDef = { width, height, walls, goals, axes, player, boxes };
-  return { number: json.number, name: json.name, text: json.text, level };
+  return { number: json.number, name: json.name, text: json.text, great: json.great, perfect: json.perfect, level };
 }

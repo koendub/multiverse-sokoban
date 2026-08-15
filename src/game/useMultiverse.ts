@@ -17,6 +17,7 @@ export interface MultiverseSnapshot {
   readonly singleUniverseScene: Scene;
   readonly stats: MultiverseStats;
   readonly solved: boolean;
+  readonly moves: number;
 }
 
 /** Mutable, persisted across snapshots so split-view boards keep a stable identity (see groupIdentity.ts). */
@@ -34,7 +35,7 @@ const FACING_BY_DIRECTION: Readonly<Record<DirectionName, Facing>> = {
 
 const DEFAULT_FACING: Facing = "down";
 
-function snapshot(multiverse: Multiverse, level: LevelDef, universeIndex: number, identity: IdentityState, facing: Facing): MultiverseSnapshot {
+function snapshot(multiverse: Multiverse, level: LevelDef, universeIndex: number, identity: IdentityState, facing: Facing, moves: number): MultiverseSnapshot {
   const matchedGroups = matchGroupIdentities(identity.groups, multiverse.getGroups(), () => identity.nextId++);
   identity.groups = matchedGroups;
 
@@ -44,6 +45,7 @@ function snapshot(multiverse: Multiverse, level: LevelDef, universeIndex: number
     singleUniverseScene: buildSingleUniverseScene(multiverse, universeKeyAt(level, universeIndex), facing),
     stats: computeStats(multiverse, level),
     solved: multiverse.isSolved(),
+    moves,
   };
 }
 
@@ -78,14 +80,14 @@ export function useMultiverse(level: LevelDef, onSolved?: (moves: number) => voi
   const totalUniverses = Math.max(1, Number(totalUniverseCount(level)));
   const moveCountRef = useRef(0);
   const [universeIndex, setUniverseIndex] = useState(0);
-  const [state, setState] = useState(() => snapshot(multiverse, level, universeIndex, identityRef.current!, facingRef.current));
+  const [state, setState] = useState(() => snapshot(multiverse, level, universeIndex, identityRef.current!, facingRef.current, moveCountRef.current));
 
   const step = useCallback(
     (dir: DirectionName) => {
       multiverse.step(dir);
       moveCountRef.current += 1;
       facingRef.current = FACING_BY_DIRECTION[dir];
-      const next = snapshot(multiverse, level, universeIndex, identityRef.current!, facingRef.current);
+      const next = snapshot(multiverse, level, universeIndex, identityRef.current!, facingRef.current, moveCountRef.current);
       setState(next);
       if (next.solved) onSolved?.(moveCountRef.current);
     },
@@ -95,7 +97,7 @@ export function useMultiverse(level: LevelDef, onSolved?: (moves: number) => voi
   const undo = useCallback(() => {
     if (multiverse.undo()) {
       moveCountRef.current = Math.max(0, moveCountRef.current - 1);
-      setState(snapshot(multiverse, level, universeIndex, identityRef.current!, facingRef.current));
+      setState(snapshot(multiverse, level, universeIndex, identityRef.current!, facingRef.current, moveCountRef.current));
     }
   }, [multiverse, level, universeIndex]);
 
@@ -104,14 +106,14 @@ export function useMultiverse(level: LevelDef, onSolved?: (moves: number) => voi
     moveCountRef.current = 0;
     identityRef.current = { groups: [], nextId: 0 }; // a fresh playthrough starts identity numbering over
     facingRef.current = DEFAULT_FACING;
-    setState(snapshot(multiverse, level, universeIndex, identityRef.current, facingRef.current));
+    setState(snapshot(multiverse, level, universeIndex, identityRef.current, facingRef.current, moveCountRef.current));
   }, [multiverse, level, universeIndex]);
 
   const goToUniverse = useCallback(
     (index: number) => {
       const normalized = ((index % totalUniverses) + totalUniverses) % totalUniverses;
       setUniverseIndex(normalized);
-      setState(snapshot(multiverse, level, normalized, identityRef.current!, facingRef.current));
+      setState(snapshot(multiverse, level, normalized, identityRef.current!, facingRef.current, moveCountRef.current));
     },
     [multiverse, level, totalUniverses],
   );

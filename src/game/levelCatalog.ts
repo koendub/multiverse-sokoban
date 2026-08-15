@@ -6,6 +6,8 @@ export interface LevelCatalogEntry {
   readonly number: number;
   readonly name: string;
   readonly text?: string;
+  readonly great?: number;
+  readonly perfect?: number;
   readonly level: LevelDef;
 }
 
@@ -21,8 +23,8 @@ export function getLevelCatalog(): readonly LevelCatalogEntry[] {
   if (!cached) {
     cached = Object.values(levelModules)
       .map((json) => {
-        const { number, name, text, level } = parseLevelJson(json);
-        return { number, name, text, level };
+        const { number, name, text, great, perfect, level } = parseLevelJson(json);
+        return { number, name, text, great, perfect, level };
       })
       .sort((a, b) => a.number - b.number);
   }

@@ -6,15 +6,20 @@ import { useAdvanceKey } from "../game/useAdvanceKey.ts";
 import { useUndoRestartKeys } from "../game/useUndoRestartKeys.ts";
 import { useViewKeys } from "../game/useViewKeys.ts";
 import type { ViewMode } from "../game/useViewKeys.ts";
+import { starTierForMoves } from "../game/starRating.ts";
 import { GameBoard } from "./GameBoard.tsx";
 import { MultiBoardGrid } from "./MultiBoardGrid.tsx";
 import { TopBar } from "./TopBar.tsx";
+import { StarIcon } from "./StarIcon.tsx";
 
 export interface LevelPlayerProps {
   readonly levelNumber: number;
   readonly levelName: string;
   /** Optional blurb shown above the game render. Nothing is shown if omitted. */
   readonly levelText?: string;
+  /** Move-count thresholds for the silver/gold star - see starRating.ts. */
+  readonly levelGreat?: number;
+  readonly levelPerfect?: number;
   readonly level: LevelDef;
   readonly hasNextLevel: boolean;
   readonly onAdvance: () => void;
@@ -26,7 +31,7 @@ export interface LevelPlayerProps {
  * `key={levelNumber}` from the parent) so its Multiverse resets cleanly
  * instead of trying to migrate state between unrelated levels.
  */
-export function LevelPlayer({ levelNumber, levelName, levelText, level, hasNextLevel, onAdvance, onSolved }: LevelPlayerProps) {
+export function LevelPlayer({ levelNumber, levelName, levelText, levelGreat, levelPerfect, level, hasNextLevel, onAdvance, onSolved }: LevelPlayerProps) {
   const {
     combinedScene,
     splitScenes,
@@ -34,6 +39,7 @@ export function LevelPlayer({ levelNumber, levelName, levelText, level, hasNextL
     stats,
     solved,
     universeIndex,
+    moves,
     step,
     undo,
     restart,
@@ -71,6 +77,7 @@ export function LevelPlayer({ levelNumber, levelName, levelText, level, hasNextL
         view={viewMode}
         onSelectView={selectView}
         universeIndex={universeIndex}
+        moves={moves}
       />
 
       {levelText && <p className="max-w-prose text-center text-sm text-slate-400">{levelText}</p>}
@@ -93,6 +100,7 @@ export function LevelPlayer({ levelNumber, levelName, levelText, level, hasNextL
         </div>
         {solved && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-950/85 text-center">
+            <StarIcon tier={starTierForMoves(moves, { great: levelGreat, perfect: levelPerfect })} className="h-10 w-10" />
             <span className="text-xl font-semibold text-emerald-400">Congratz!</span>
             <span className="text-sm text-slate-200">
               {hasNextLevel ? "Press space to go to the next level" : "You've completed every level!"}
