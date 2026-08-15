@@ -1,6 +1,7 @@
 {
   "number": 2,
   "name": "Multiverse",
+  "text": "The difference with normal Sokoban is that you are trying to solve the puzzle in multiple universes at the same time. Look at this level: You see two boxes, but there is actually only one box, but there are 2 universes! This can be confusing, so if you press the number 3, you will see one specific universe, then press 3 again to see the other one. Press 1 to go back to the 'merged' view. When you understand what is going on, solve the puzzle!",
   "grid": [
     "###########",
     "#.........#",

@@ -1,6 +1,7 @@
 {
-  "number": 3,
+  "number": 8,
   "name": "Phase Through",
+  "text": "In many levels there will be a simple way to solve the puzzle. However, there is often a less obvious way to solve it in less moves. To start, can you solve this level in 11 moves?",
   "grid": [
     "##########",
     "#.G......#",

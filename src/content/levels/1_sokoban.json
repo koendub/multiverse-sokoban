@@ -1,6 +1,7 @@
 {
   "number": 1,
-  "name": "Introduction",
+  "name": "Sokoban",
+  "text": "Welcome to Multiverse Sokoban! This game works like sokoban, so you have to push boxes onto the goals. You win if all boxes are on a goal. Try it! Controls are WASD to move, R to undo a move and F to restart a level.",
   "grid": [
     "##########",
     "#........#",
