@@ -1,0 +1,25 @@
+{
+  "number": 5,
+  "name": "Multiple Boxes",
+  "text": "Not every box has to vary across universes - you can also just have several ordinary boxes to push around at once.",
+  "grid": [
+    "#######",
+    "#.....#",
+    "#.....#",
+    "#.....#",
+    "#..P..#",
+    "#.....#",
+    "#.G.G.#",
+    "#######"
+  ],
+  "boxes": {
+    "a": {
+      "type": "constant",
+      "pos": { "x": 2, "y": 2 }
+    },
+    "b": {
+      "type": "constant",
+      "pos": { "x": 4, "y": 2 }
+    }
+  }
+}

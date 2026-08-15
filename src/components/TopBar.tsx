@@ -10,6 +10,7 @@ export interface TopBarProps {
   /** Which universe is currently shown in the single-universe view (0-based). Only meaningful when `view === 3`. */
   readonly universeIndex: number;
   readonly moves: number;
+  readonly viewAvailability: Readonly<Record<ViewMode, boolean>>;
 }
 
 function formatBig(n: bigint): string {
@@ -57,7 +58,7 @@ function ViewIcon({ mode }: { mode: ViewMode }) {
  * content (not the viewport width), with slanted sides that are wider at
  * the top than the bottom.
  */
-export function TopBar({ levelNumber, levelName, stats, view, onSelectView, universeIndex, moves }: TopBarProps) {
+export function TopBar({ levelNumber, levelName, stats, view, onSelectView, universeIndex, moves, viewAvailability }: TopBarProps) {
   const items = [
     { label: "Level", value: `${levelNumber} · ${levelName}` },
     { label: "Moves", value: moves.toLocaleString("en-US") },
@@ -75,21 +76,29 @@ export function TopBar({ levelNumber, levelName, stats, view, onSelectView, univ
       <div className="flex flex-col items-center gap-1 px-6 pb-2.5 pt-3">
         <span className="whitespace-nowrap text-[10px] font-medium uppercase tracking-wide text-slate-500">View</span>
         <div className="flex items-center gap-1">
-          {VIEW_OPTIONS.map((option) => (
-            <button
-              key={option.mode}
-              type="button"
-              onClick={() => onSelectView(option.mode)}
-              aria-label={option.label}
-              aria-pressed={view === option.mode}
-              title={option.label}
-              className={`flex h-6 w-6 items-center justify-center rounded transition-colors ${
-                view === option.mode ? "bg-sky-500/20 text-sky-400" : "text-slate-500 hover:text-slate-300"
-              }`}
-            >
-              <ViewIcon mode={option.mode} />
-            </button>
-          ))}
+          {VIEW_OPTIONS.map((option) => {
+            const available = viewAvailability[option.mode];
+            return (
+              <button
+                key={option.mode}
+                type="button"
+                onClick={() => onSelectView(option.mode)}
+                disabled={!available}
+                aria-label={available ? option.label : `${option.label} - unavailable right now`}
+                aria-pressed={view === option.mode}
+                title={available ? option.label : `${option.label} - unavailable right now`}
+                className={`flex h-6 w-6 items-center justify-center rounded transition-colors ${
+                  !available
+                    ? "cursor-not-allowed text-slate-700"
+                    : view === option.mode
+                      ? "bg-sky-500/20 text-sky-400"
+                      : "text-slate-500 hover:text-slate-300"
+                }`}
+              >
+                <ViewIcon mode={option.mode} />
+              </button>
+            );
+          })}
         </div>
       </div>
 

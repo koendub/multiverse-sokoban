@@ -1,5 +1,6 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { LevelDef } from "../engine/levels/level.ts";
+import type { LevelViews } from "../engine/levels/jsonLevel.ts";
 import { useMultiverse } from "../game/useMultiverse.ts";
 import { useWasdControls } from "../game/useWasdControls.ts";
 import { useAdvanceKey } from "../game/useAdvanceKey.ts";
@@ -7,6 +8,7 @@ import { useUndoRestartKeys } from "../game/useUndoRestartKeys.ts";
 import { useViewKeys } from "../game/useViewKeys.ts";
 import type { ViewMode } from "../game/useViewKeys.ts";
 import { starTierForMoves } from "../game/starRating.ts";
+import { firstAvailableView, isViewAvailable } from "../game/viewAvailability.ts";
 import { GameBoard } from "./GameBoard.tsx";
 import { MultiBoardGrid } from "./MultiBoardGrid.tsx";
 import { TopBar } from "./TopBar.tsx";
@@ -20,6 +22,7 @@ export interface LevelPlayerProps {
   /** Move-count thresholds for the silver/gold star - see starRating.ts. */
   readonly levelGreat?: number;
   readonly levelPerfect?: number;
+  readonly levelViews: LevelViews;
   readonly level: LevelDef;
   readonly hasNextLevel: boolean;
   readonly onAdvance: () => void;
@@ -31,7 +34,7 @@ export interface LevelPlayerProps {
  * `key={levelNumber}` from the parent) so its Multiverse resets cleanly
  * instead of trying to migrate state between unrelated levels.
  */
-export function LevelPlayer({ levelNumber, levelName, levelText, levelGreat, levelPerfect, level, hasNextLevel, onAdvance, onSolved }: LevelPlayerProps) {
+export function LevelPlayer({ levelNumber, levelName, levelText, levelGreat, levelPerfect, levelViews, level, hasNextLevel, onAdvance, onSolved }: LevelPlayerProps) {
   const {
     combinedScene,
     splitScenes,
@@ -47,19 +50,40 @@ export function LevelPlayer({ levelNumber, levelName, levelText, levelGreat, lev
     cycleUniverse,
   } = useMultiverse(level, onSolved);
 
-  const [viewMode, setViewMode] = useState<ViewMode>(1);
+  const [viewMode, setViewMode] = useState<ViewMode>(() => firstAvailableView(levelViews, 0));
+
+  // Switching views is always "go to this mode, and if it's the per-universe
+  // one, reset which universe it's showing" - shared by picking a view by
+  // hand and by the auto-fallback effect below, which needs the exact same
+  // reset when it moves the player into view 3 on its own.
+  const applyView = useCallback(
+    (view: ViewMode) => {
+      setViewMode(view);
+      if (view === 3) goToUniverse(0);
+    },
+    [goToUniverse],
+  );
 
   const selectView = useCallback(
     (view: ViewMode) => {
+      if (!isViewAvailable(levelViews, view, moves)) return;
       if (view === 3 && viewMode === 3) {
         cycleUniverse();
       } else {
-        setViewMode(view);
-        if (view === 3) goToUniverse(0);
+        applyView(view);
       }
     },
-    [viewMode, cycleUniverse, goToUniverse],
+    [levelViews, moves, viewMode, cycleUniverse, applyView],
   );
+
+  // A "before-moves" view stops being available the instant the player's
+  // first move lands - if that was the view on screen, hop to the next
+  // available one rather than leaving an unusable view showing.
+  useEffect(() => {
+    if (!isViewAvailable(levelViews, viewMode, moves)) {
+      applyView(firstAvailableView(levelViews, moves));
+    }
+  }, [levelViews, viewMode, moves, applyView]);
 
   useWasdControls((dir) => {
     if (!solved) step(dir);
@@ -78,6 +102,11 @@ export function LevelPlayer({ levelNumber, levelName, levelText, levelGreat, lev
         onSelectView={selectView}
         universeIndex={universeIndex}
         moves={moves}
+        viewAvailability={{
+          1: isViewAvailable(levelViews, 1, moves),
+          2: isViewAvailable(levelViews, 2, moves),
+          3: isViewAvailable(levelViews, 3, moves),
+        }}
       />
 
       {levelText && <p className="max-w-prose text-center text-sm text-slate-400">{levelText}</p>}

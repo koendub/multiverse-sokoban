@@ -1,5 +1,5 @@
 import type { LevelDef } from "../engine/levels/level.ts";
-import type { LevelJson } from "../engine/levels/jsonLevel.ts";
+import type { LevelJson, LevelViews } from "../engine/levels/jsonLevel.ts";
 import { parseLevelJson } from "../engine/levels/jsonLevel.ts";
 
 export interface LevelCatalogEntry {
@@ -8,6 +8,7 @@ export interface LevelCatalogEntry {
   readonly text?: string;
   readonly great?: number;
   readonly perfect?: number;
+  readonly views: LevelViews;
   readonly level: LevelDef;
 }
 
@@ -23,8 +24,8 @@ export function getLevelCatalog(): readonly LevelCatalogEntry[] {
   if (!cached) {
     cached = Object.values(levelModules)
       .map((json) => {
-        const { number, name, text, great, perfect, level } = parseLevelJson(json);
-        return { number, name, text, great, perfect, level };
+        const { number, name, text, great, perfect, views, level } = parseLevelJson(json);
+        return { number, name, text, great, perfect, views, level };
       })
       .sort((a, b) => a.number - b.number);
   }

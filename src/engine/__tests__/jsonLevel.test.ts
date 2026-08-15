@@ -112,4 +112,25 @@ describe("parseLevelJson", () => {
     };
     expect(() => parseLevelJson(json)).toThrow(/out of bounds/);
   });
+
+  it("defaults every view to unrestricted when 'views' is omitted", () => {
+    const parsed = parseLevelJson({ number: 1, name: "Test", grid: baseGrid });
+    expect(parsed.views).toEqual({ merged: "unrestricted", perCharacter: "unrestricted", perUniverse: "unrestricted" });
+  });
+
+  it("parses partial view restrictions, defaulting the rest", () => {
+    const json: LevelJson = { number: 1, name: "Test", grid: baseGrid, views: { perUniverse: "disabled" } };
+    const parsed = parseLevelJson(json);
+    expect(parsed.views).toEqual({ merged: "unrestricted", perCharacter: "unrestricted", perUniverse: "disabled" });
+  });
+
+  it("parses a 'before-moves' view restriction", () => {
+    const json: LevelJson = { number: 1, name: "Test", grid: baseGrid, views: { merged: "before-moves" } };
+    expect(parseLevelJson(json).views.merged).toBe("before-moves");
+  });
+
+  it("rejects an invalid view restriction value", () => {
+    const json = { number: 1, name: "Test", grid: baseGrid, views: { merged: "sometimes" } } as unknown as LevelJson;
+    expect(() => parseLevelJson(json)).toThrow(/views.merged/);
+  });
 });

@@ -32,6 +32,30 @@ export interface LevelJsonVariantBox {
 
 export type LevelJsonBox = LevelJsonConstantBox | LevelJsonVariantBox;
 
+/**
+ * How available one of the 3 view modes is on a level:
+ * - "unrestricted" (the default, same as omitting the view entirely): usable anytime.
+ * - "before-moves": only usable while the player hasn't moved yet this playthrough.
+ * - "disabled": never usable.
+ */
+export type ViewRestriction = "unrestricted" | "before-moves" | "disabled";
+
+export interface LevelJsonViews {
+  /** View 1: every currently-represented universe overlaid into one render. */
+  readonly merged?: ViewRestriction;
+  /** View 2: one render per distinct player location. */
+  readonly perCharacter?: ViewRestriction;
+  /** View 3: one render for a single, fully-resolved universe. */
+  readonly perUniverse?: ViewRestriction;
+}
+
+/** Same shape as `LevelJsonViews`, but with every entry defaulted - see `parseViews`. */
+export interface LevelViews {
+  readonly merged: ViewRestriction;
+  readonly perCharacter: ViewRestriction;
+  readonly perUniverse: ViewRestriction;
+}
+
 export interface LevelJson {
   readonly number: number;
   readonly name: string;
@@ -43,6 +67,8 @@ export interface LevelJson {
   /** Move counts for the silver/gold star thresholds - see starRating.ts. Both optional; omitting one just makes that tier unreachable. */
   readonly great?: number;
   readonly perfect?: number;
+  /** Per-view availability restrictions. Any view not mentioned defaults to "unrestricted". */
+  readonly views?: LevelJsonViews;
 }
 
 export interface ParsedLevel {
@@ -51,6 +77,7 @@ export interface ParsedLevel {
   readonly text?: string;
   readonly great?: number;
   readonly perfect?: number;
+  readonly views: LevelViews;
   readonly level: LevelDef;
 }
 
@@ -103,6 +130,19 @@ function parseAxes(json: LevelJson, context: string): Axis[] {
   });
 }
 
+const VALID_VIEW_RESTRICTIONS: ReadonlySet<string> = new Set<ViewRestriction>(["unrestricted", "before-moves", "disabled"]);
+
+function parseViews(json: LevelJson, context: string): LevelViews {
+  const views = json.views ?? {};
+  const pick = (key: keyof LevelJsonViews): ViewRestriction => {
+    const value = views[key];
+    if (value === undefined) return "unrestricted";
+    if (!VALID_VIEW_RESTRICTIONS.has(value)) fail(context, `views.${key} has invalid value "${value}"`);
+    return value;
+  };
+  return { merged: pick("merged"), perCharacter: pick("perCharacter"), perUniverse: pick("perUniverse") };
+}
+
 function inBounds(pos: Vec2, width: number, height: number): boolean {
   return pos.x >= 0 && pos.y >= 0 && pos.x < width && pos.y < height;
 }
@@ -153,7 +193,8 @@ export function parseLevelJson(json: LevelJson): ParsedLevel {
   const { width, height, walls, goals, player } = parseGrid(json, context);
   const axes = parseAxes(json, context);
   const boxes = parseBoxes(json, axes, { width, height }, context);
+  const views = parseViews(json, context);
 
   const level: LevelDef = { width, height, walls, goals, axes, player, boxes };
-  return { number: json.number, name: json.name, text: json.text, great: json.great, perfect: json.perfect, level };
+  return { number: json.number, name: json.name, text: json.text, great: json.great, perfect: json.perfect, views, level };
 }

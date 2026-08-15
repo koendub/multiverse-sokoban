@@ -59,6 +59,7 @@ export function GameApp() {
         levelText={current.text}
         levelGreat={current.great}
         levelPerfect={current.perfect}
+        levelViews={current.views}
         level={current.level}
         hasNextLevel={Boolean(next)}
         onAdvance={goToNextLevel}
