@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import type { LevelDef } from "../engine/levels/level.ts";
 import type { LevelViews } from "../engine/levels/jsonLevel.ts";
+import type { DirectionName } from "../engine/multiverse/types.ts";
 import { useMultiverse } from "../game/useMultiverse.ts";
 import { useWasdControls } from "../game/useWasdControls.ts";
+import { useSwipeControls } from "../game/useSwipeControls.ts";
 import { useAdvanceKey } from "../game/useAdvanceKey.ts";
 import { useUndoRestartKeys } from "../game/useUndoRestartKeys.ts";
 import { useViewKeys } from "../game/useViewKeys.ts";
@@ -15,11 +17,17 @@ import { GameBoard } from "./GameBoard.tsx";
 import { MultiBoardGrid } from "./MultiBoardGrid.tsx";
 import { TopBar } from "./TopBar.tsx";
 import { StarIcon } from "./StarIcon.tsx";
+import { LevelIntroModal } from "./LevelIntroModal.tsx";
+import { TouchControls } from "./TouchControls.tsx";
 
 /** Tile size used before the board area's real size has been measured (see useElementSize.ts). */
 const DEFAULT_TILE_SIZE = 48;
 /** The bordered box around the active view has a 1px border on every side. */
 const BOARD_BORDER_PX = 2;
+/** Top padding used before the top bar's real height has been measured. */
+const DEFAULT_TOP_PADDING_PX = 80;
+/** Breathing room between the top bar and whatever's below it. */
+const TOP_PADDING_GAP_PX = 16;
 
 export interface LevelPlayerProps {
   readonly levelNumber: number;
@@ -92,9 +100,18 @@ export function LevelPlayer({ levelNumber, levelName, levelText, levelGreat, lev
     }
   }, [levelViews, viewMode, moves, applyView]);
 
-  useWasdControls((dir) => {
-    if (!solved) step(dir);
-  });
+  // Shown automatically once when the level starts (if it has a blurb), and
+  // again on demand via the top bar's info icon - see LevelIntroModal.tsx.
+  const [introOpen, setIntroOpen] = useState(Boolean(levelText));
+
+  const move = useCallback(
+    (dir: DirectionName) => {
+      if (!solved && !introOpen) step(dir);
+    },
+    [solved, introOpen, step],
+  );
+  useWasdControls(move);
+  useSwipeControls(move);
   useUndoRestartKeys(undo, restart);
   useAdvanceKey(solved, onAdvance);
   useViewKeys(selectView);
@@ -104,9 +121,21 @@ export function LevelPlayer({ levelNumber, levelName, levelText, levelGreat, lev
   const combinedTileSize = fitTileSize(combinedScene.width, combinedScene.height, availableSize, DEFAULT_TILE_SIZE);
   const singleTileSize = fitTileSize(singleUniverseScene.width, singleUniverseScene.height, availableSize, DEFAULT_TILE_SIZE);
 
+  // The top bar wraps onto extra rows on narrow phones (see TopBar.tsx), so
+  // its height isn't fixed - a static CSS top-padding would either waste
+  // space on wide screens or, worse, undershoot and let the board start
+  // underneath it on narrow ones. Measuring it directly keeps this correct
+  // at every width instead of guessing per breakpoint.
+  const [topBarRef, topBarSize] = useElementSize<HTMLDivElement>();
+  const topPadding = topBarSize.height > 0 ? topBarSize.height + TOP_PADDING_GAP_PX : DEFAULT_TOP_PADDING_PX;
+
   return (
-    <div className="flex h-svh flex-col items-center gap-6 overflow-hidden bg-slate-950 px-4 pb-8 pt-20 text-slate-100">
+    <div
+      className="flex h-svh flex-col items-center gap-6 overflow-hidden bg-slate-950 px-2 pb-3 text-slate-100 sm:px-4 sm:pb-8"
+      style={{ paddingTop: topPadding }}
+    >
       <TopBar
+        ref={topBarRef}
         levelNumber={levelNumber}
         levelName={levelName}
         stats={stats}
@@ -119,9 +148,13 @@ export function LevelPlayer({ levelNumber, levelName, levelText, levelGreat, lev
           2: isViewAvailable(levelViews, 2, moves),
           3: isViewAvailable(levelViews, 3, moves),
         }}
+        hasIntroText={Boolean(levelText)}
+        onShowIntro={() => setIntroOpen(true)}
       />
 
-      {levelText && <p className="max-w-prose text-center text-sm text-slate-400">{levelText}</p>}
+      {introOpen && levelText && <LevelIntroModal text={levelText} onClose={() => setIntroOpen(false)} />}
+
+      <TouchControls onUndo={undo} onRestart={restart} />
 
       {/*
        * This wrapper is the sizing source for the board(s) below: it's a

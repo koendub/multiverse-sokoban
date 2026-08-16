@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import type { MultiverseStats } from "../game/stats.ts";
 import type { ViewMode } from "../game/useViewKeys.ts";
 
@@ -11,6 +12,9 @@ export interface TopBarProps {
   readonly universeIndex: number;
   readonly moves: number;
   readonly viewAvailability: Readonly<Record<ViewMode, boolean>>;
+  /** Whether this level has a blurb to show - see LevelIntroModal.tsx. When false, no info icon is shown. */
+  readonly hasIntroText: boolean;
+  readonly onShowIntro: () => void;
 }
 
 function formatBig(n: bigint): string {
@@ -53,12 +57,30 @@ function ViewIcon({ mode }: { mode: ViewMode }) {
   );
 }
 
+function InfoIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2}>
+      <circle cx="12" cy="12" r="9" />
+      <line x1="12" y1="11" x2="12" y2="16" strokeLinecap="round" />
+      <circle cx="12" cy="7.5" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 /**
  * A slim badge anchored to the top-center of the screen, sized to its
  * content (not the viewport width), with slanted sides that are wider at
  * the top than the bottom.
+ *
+ * Forwards its ref to the outer (fixed-positioned) element so callers can
+ * measure its real rendered height - it wraps onto extra rows on narrow
+ * phones, so a fixed CSS top-padding can't reliably reserve enough space
+ * for it (see LevelPlayer.tsx).
  */
-export function TopBar({ levelNumber, levelName, stats, view, onSelectView, universeIndex, moves, viewAvailability }: TopBarProps) {
+export const TopBar = forwardRef<HTMLDivElement, TopBarProps>(function TopBar(
+  { levelNumber, levelName, stats, view, onSelectView, universeIndex, moves, viewAvailability, hasIntroText, onShowIntro },
+  ref,
+) {
   const items = [
     { label: "Level", value: `${levelNumber} · ${levelName}` },
     { label: "Moves", value: moves.toLocaleString("en-US") },
@@ -70,10 +92,15 @@ export function TopBar({ levelNumber, levelName, stats, view, onSelectView, univ
 
   return (
     <div
-      className="fixed left-1/2 top-0 z-40 flex w-fit -translate-x-1/2 divide-x divide-slate-700 bg-slate-900/95 text-slate-200 shadow-lg"
+      ref={ref}
+      // Narrow phones can't fit every stat in one row at any reasonable text
+      // size, so below `sm` this wraps onto as many rows as it needs (capped
+      // to the viewport width) instead of overflowing off-screen; `sm` and up
+      // it's back to the single-row badge, dividers and all.
+      className="fixed left-1/2 top-0 z-40 flex w-[94vw] flex-wrap items-center justify-center gap-x-1 gap-y-0.5 -translate-x-1/2 bg-slate-900/95 text-slate-200 shadow-lg sm:w-fit sm:flex-nowrap sm:gap-0 sm:divide-x sm:divide-slate-700"
       style={{ clipPath: "polygon(0 0, 100% 0, calc(100% - 16px) 100%, 16px 100%)" }}
     >
-      <div className="flex flex-col items-center gap-1 px-6 pb-2.5 pt-3">
+      <div className="flex flex-col items-center gap-1 px-3 pb-1.5 pt-2 sm:px-6 sm:pb-2.5 sm:pt-3">
         <span className="whitespace-nowrap text-[10px] font-medium uppercase tracking-wide text-slate-500">View</span>
         <div className="flex items-center gap-1">
           {VIEW_OPTIONS.map((option) => {
@@ -102,12 +129,27 @@ export function TopBar({ levelNumber, levelName, stats, view, onSelectView, univ
         </div>
       </div>
 
+      {hasIntroText && (
+        <div className="flex flex-col items-center gap-1 px-3 pb-1.5 pt-2 sm:px-6 sm:pb-2.5 sm:pt-3">
+          <span className="whitespace-nowrap text-[10px] font-medium uppercase tracking-wide text-slate-500">Info</span>
+          <button
+            type="button"
+            onClick={onShowIntro}
+            aria-label="Show level info"
+            title="Show level info"
+            className="flex h-6 w-6 items-center justify-center rounded text-slate-500 transition-colors hover:text-slate-300"
+          >
+            <InfoIcon />
+          </button>
+        </div>
+      )}
+
       {items.map((item) => (
-        <div key={item.label} className="flex flex-col items-center gap-0.5 px-6 pb-2.5 pt-3">
+        <div key={item.label} className="flex flex-col items-center gap-0.5 px-3 pb-1.5 pt-2 sm:px-6 sm:pb-2.5 sm:pt-3">
           <span className="whitespace-nowrap text-[10px] font-medium uppercase tracking-wide text-slate-500">{item.label}</span>
           <span className="whitespace-nowrap text-sm font-semibold tabular-nums">{item.value}</span>
         </div>
       ))}
     </div>
   );
-}
+});
