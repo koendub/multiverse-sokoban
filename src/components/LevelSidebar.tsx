@@ -28,7 +28,10 @@ export function LevelSidebar({ levels, currentLevel, bestMoves, onSelect }: Leve
 
   return (
     <aside
-      className="fixed left-0 top-1/2 z-40 flex flex-col rounded-r-xl border border-l-0 border-slate-700 bg-slate-900 shadow-xl transition-transform duration-200 ease-out"
+      // Above the top bar (z-40) so an expanded level list isn't hidden
+      // behind it - still below the level-intro modal (z-50, but later in
+      // the DOM, so it wins ties).
+      className="fixed left-0 top-1/2 z-50 flex flex-col rounded-r-xl border border-l-0 border-slate-700 bg-slate-900 shadow-xl transition-transform duration-200 ease-out"
       style={{
         width: PANEL_WIDTH,
         maxHeight: PANEL_MAX_HEIGHT,

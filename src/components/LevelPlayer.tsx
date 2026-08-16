@@ -12,6 +12,8 @@ import type { ViewMode } from "../game/useViewKeys.ts";
 import { starTierForMoves } from "../game/starRating.ts";
 import { firstAvailableView, isViewAvailable } from "../game/viewAvailability.ts";
 import { useElementSize } from "../game/useElementSize.ts";
+import { useTopBarRail } from "../game/useTopBarRail.ts";
+import { useIsPhone } from "../game/useIsPhone.ts";
 import { fitTileSize } from "../game/fitTileSize.ts";
 import { GameBoard } from "./GameBoard.tsx";
 import { MultiBoardGrid } from "./MultiBoardGrid.tsx";
@@ -24,10 +26,14 @@ import { TouchControls } from "./TouchControls.tsx";
 const DEFAULT_TILE_SIZE = 48;
 /** The bordered box around the active view has a 1px border on every side. */
 const BOARD_BORDER_PX = 2;
-/** Top padding used before the top bar's real height has been measured. */
+/** Top padding used before the top bar's real height has been measured (bar layout, where it sits at the top). */
 const DEFAULT_TOP_PADDING_PX = 80;
-/** Breathing room between the top bar and whatever's below it. */
-const TOP_PADDING_GAP_PX = 16;
+/** Right padding used before the top bar's real width has been measured (rail layout, on a sideways phone). */
+const DEFAULT_RIGHT_PADDING_PX = 96;
+/** Breathing room between the top bar and whatever's next to it. */
+const TOP_BAR_GAP_PX = 16;
+/** The rail layout doesn't need top padding reserved for the top bar (it's on the right there) - just enough for the safe area/general breathing room. */
+const RAIL_TOP_PADDING_PX = 12;
 
 export interface LevelPlayerProps {
   readonly levelNumber: number;
@@ -121,18 +127,26 @@ export function LevelPlayer({ levelNumber, levelName, levelText, levelGreat, lev
   const combinedTileSize = fitTileSize(combinedScene.width, combinedScene.height, availableSize, DEFAULT_TILE_SIZE);
   const singleTileSize = fitTileSize(singleUniverseScene.width, singleUniverseScene.height, availableSize, DEFAULT_TILE_SIZE);
 
-  // The top bar wraps onto extra rows on narrow phones (see TopBar.tsx), so
-  // its height isn't fixed - a static CSS top-padding would either waste
-  // space on wide screens or, worse, undershoot and let the board start
-  // underneath it on narrow ones. Measuring it directly keeps this correct
-  // at every width instead of guessing per breakpoint.
+  // The top bar becomes a right-side rail on a sideways phone and wraps
+  // onto extra rows on narrow-ish widths otherwise (see TopBar.tsx and
+  // useTopBarRail.ts), so neither its height nor its width is fixed - a
+  // static CSS offset would either waste space or, worse, undershoot and
+  // let the board start underneath/behind it. Measuring it directly keeps
+  // this correct at every size instead of guessing per breakpoint.
   const [topBarRef, topBarSize] = useElementSize<HTMLDivElement>();
-  const topPadding = topBarSize.height > 0 ? topBarSize.height + TOP_PADDING_GAP_PX : DEFAULT_TOP_PADDING_PX;
+  const isRail = useTopBarRail();
+  const isPhone = useIsPhone();
+  const topPadding = isRail ? RAIL_TOP_PADDING_PX : topBarSize.height > 0 ? topBarSize.height + TOP_BAR_GAP_PX : DEFAULT_TOP_PADDING_PX;
+  const rightPadding = isRail ? (topBarSize.width > 0 ? topBarSize.width + TOP_BAR_GAP_PX : DEFAULT_RIGHT_PADDING_PX) : undefined;
 
   return (
     <div
-      className="flex h-svh flex-col items-center gap-6 overflow-hidden bg-slate-950 px-2 pb-3 text-slate-100 sm:px-4 sm:pb-8"
-      style={{ paddingTop: topPadding }}
+      // `dvh` (dynamic viewport height) tracks the *currently visible* area
+      // as the mobile browser's address bar shows/hides, unlike `vh`/`svh`
+      // which lock to a fixed assumption and can leave content sized wrong
+      // for whatever's actually on screen right now.
+      className="flex h-dvh flex-col items-center gap-6 overflow-hidden bg-slate-950 pb-3 pl-2 pr-2 text-slate-100 sm:pb-8 sm:pl-4 sm:pr-4"
+      style={{ paddingTop: topPadding, ...(rightPadding !== undefined && { paddingRight: rightPadding }) }}
     >
       <TopBar
         ref={topBarRef}
@@ -150,11 +164,12 @@ export function LevelPlayer({ levelNumber, levelName, levelText, levelGreat, lev
         }}
         hasIntroText={Boolean(levelText)}
         onShowIntro={() => setIntroOpen(true)}
+        isRail={isRail}
       />
 
       {introOpen && levelText && <LevelIntroModal text={levelText} onClose={() => setIntroOpen(false)} />}
 
-      <TouchControls onUndo={undo} onRestart={restart} />
+      {isPhone && <TouchControls onUndo={undo} onRestart={restart} />}
 
       {/*
        * This wrapper is the sizing source for the board(s) below: it's a
@@ -182,11 +197,20 @@ export function LevelPlayer({ levelNumber, levelName, levelText, levelGreat, lev
             <GameBoard scene={singleUniverseScene} tileSize={singleTileSize} />
           </div>
           {solved && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-950/85 text-center">
+            <div
+              // On a phone there's no space bar to press, so the whole
+              // overlay becomes the affordance instead - tapping it advances
+              // directly rather than just repeating an instruction the
+              // player has no way to follow.
+              className={`absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-950/85 text-center ${
+                isPhone && hasNextLevel ? "cursor-pointer" : ""
+              }`}
+              onClick={isPhone && hasNextLevel ? onAdvance : undefined}
+            >
               <StarIcon tier={starTierForMoves(moves, { great: levelGreat, perfect: levelPerfect })} className="h-10 w-10" />
               <span className="text-xl font-semibold text-emerald-400">Congratz!</span>
               <span className="text-sm text-slate-200">
-                {hasNextLevel ? "Press space to go to the next level" : "You've completed every level!"}
+                {hasNextLevel ? (isPhone ? "Tap to go to the next level" : "Press space to go to the next level") : "You've completed every level!"}
               </span>
             </div>
           )}

@@ -3,10 +3,27 @@ export interface TouchControlsProps {
   readonly onRestart: () => void;
 }
 
-/** Undo/restart buttons for phones (hidden from `sm` up, where R/F cover this) - swiping handles movement, see useSwipeControls.ts. */
+/**
+ * Undo/restart buttons for phones (R/F cover this elsewhere) - swiping
+ * handles movement, see useSwipeControls.ts. The caller decides whether to
+ * mount this at all (see useIsPhone.ts) - a plain `sm:hidden` here would be
+ * wrong on a sideways phone, which is still phone-sized but well past the
+ * `sm` *width* breakpoint.
+ *
+ * Anchored to the bottom-right corner rather than vertically centered:
+ * `position: fixed` elements positioned via `top`/height-percentage are
+ * notoriously unreliable on mobile browsers once the address bar's dynamic
+ * show/hide is involved (the offset can resolve against a taller viewport
+ * than what's actually visible, pushing the buttons off-screen). Anchoring
+ * to `bottom`/`right` sidesteps that, and the safe-area insets keep the
+ * buttons clear of the home-indicator/notch area on devices that have one.
+ */
 export function TouchControls({ onUndo, onRestart }: TouchControlsProps) {
   return (
-    <div className="fixed right-3 top-1/2 z-40 flex -translate-y-1/2 flex-col gap-3 sm:hidden">
+    <div
+      className="fixed z-40 flex flex-col gap-3"
+      style={{ right: "calc(0.75rem + env(safe-area-inset-right))", bottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}
+    >
       <button
         type="button"
         onClick={onUndo}

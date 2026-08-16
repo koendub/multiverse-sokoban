@@ -3,17 +3,12 @@
   "name": "In a Row",
   "text": "In many levels there will be a simple way to solve the puzzle. However, there is often a less obvious way to solve it in less moves. To start, can you solve this level in 11 moves?",
   "grid": [
-    "######",
-    "#...G#",
-    "#...##",
-    "#...G#",
-    "#...##",
-    "#...G#",
-    "#...##",
-    "#...G#",
-    "#...##",
-    "#.P.##",
-    "######"
+    "###########",
+    "###G#G#G#G#",
+    "#.........#",
+    "#P........#",
+    "#.........#",
+    "###########"
   ],
   "entities": {
     "a": {
@@ -21,20 +16,20 @@
       "axis": "axa",
       "positions": [
         {
-          "x": 2,
-          "y": 1
-        },
-        {
-          "x": 2,
+          "x": 3,
           "y": 3
         },
         {
-          "x": 2,
-          "y": 5
+          "x": 5,
+          "y": 3
         },
         {
-          "x": 2,
-          "y": 7
+          "x": 7,
+          "y": 3
+        },
+        {
+          "x": 9,
+          "y": 3
         }
       ]
     }

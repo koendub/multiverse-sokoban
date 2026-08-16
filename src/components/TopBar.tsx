@@ -15,6 +15,8 @@ export interface TopBarProps {
   /** Whether this level has a blurb to show - see LevelIntroModal.tsx. When false, no info icon is shown. */
   readonly hasIntroText: boolean;
   readonly onShowIntro: () => void;
+  /** True on a phone turned sideways - see useTopBarRail.ts. Switches the whole layout to a right-side vertical rail instead of the usual top-center bar. */
+  readonly isRail: boolean;
 }
 
 function formatBig(n: bigint): string {
@@ -67,18 +69,29 @@ function InfoIcon() {
   );
 }
 
+/** Vertical rail, flush to the right edge - see useTopBarRail.ts for when this applies. */
+const RAIL_CONTAINER_CLASS =
+  "fixed right-0 top-0 z-40 flex max-h-[75vh] w-fit flex-col items-center divide-y divide-slate-700 overflow-y-auto rounded-l-xl bg-slate-900/95 text-slate-200 shadow-lg";
+
 /**
- * A slim badge anchored to the top-center of the screen, sized to its
- * content (not the viewport width), with slanted sides that are wider at
- * the top than the bottom.
- *
+ * Horizontal badge, centered at the top with slanted sides. Below `sm` it
+ * wraps onto as many rows as it needs (capped to the viewport width)
+ * instead of overflowing off-screen - relevant for a narrow phone in
+ * portrait, which uses this layout rather than the rail.
+ */
+const BAR_CONTAINER_CLASS =
+  "fixed left-1/2 top-0 z-40 flex w-[94vw] flex-wrap items-center justify-center gap-x-1 gap-y-0.5 -translate-x-1/2 bg-slate-900/95 text-slate-200 shadow-lg sm:w-fit sm:flex-nowrap sm:gap-0 sm:divide-x sm:divide-slate-700 sm:[clip-path:polygon(0_0,100%_0,calc(100%-16px)_100%,16px_100%)]";
+
+const ENTRY_CLASS = "flex flex-col items-center gap-1 px-3 pb-1.5 pt-2 sm:px-6 sm:pb-2.5 sm:pt-3";
+
+/**
  * Forwards its ref to the outer (fixed-positioned) element so callers can
- * measure its real rendered height - it wraps onto extra rows on narrow
- * phones, so a fixed CSS top-padding can't reliably reserve enough space
- * for it (see LevelPlayer.tsx).
+ * measure its real rendered box - its size varies with content and with
+ * which layout is active, so a fixed CSS offset can't reliably reserve
+ * enough space for it (see LevelPlayer.tsx).
  */
 export const TopBar = forwardRef<HTMLDivElement, TopBarProps>(function TopBar(
-  { levelNumber, levelName, stats, view, onSelectView, universeIndex, moves, viewAvailability, hasIntroText, onShowIntro },
+  { levelNumber, levelName, stats, view, onSelectView, universeIndex, moves, viewAvailability, hasIntroText, onShowIntro, isRail },
   ref,
 ) {
   const items = [
@@ -93,14 +106,15 @@ export const TopBar = forwardRef<HTMLDivElement, TopBarProps>(function TopBar(
   return (
     <div
       ref={ref}
-      // Narrow phones can't fit every stat in one row at any reasonable text
-      // size, so below `sm` this wraps onto as many rows as it needs (capped
-      // to the viewport width) instead of overflowing off-screen; `sm` and up
-      // it's back to the single-row badge, dividers and all.
-      className="fixed left-1/2 top-0 z-40 flex w-[94vw] flex-wrap items-center justify-center gap-x-1 gap-y-0.5 -translate-x-1/2 bg-slate-900/95 text-slate-200 shadow-lg sm:w-fit sm:flex-nowrap sm:gap-0 sm:divide-x sm:divide-slate-700"
-      style={{ clipPath: "polygon(0 0, 100% 0, calc(100% - 16px) 100%, 16px 100%)" }}
+      className={isRail ? RAIL_CONTAINER_CLASS : BAR_CONTAINER_CLASS}
+      // Breathing room under a notch/dynamic island/rounded corner, if any
+      // (0 everywhere else) - see the `viewport-fit=cover` meta tag in
+      // index.html, which is what makes these env() calls resolve to
+      // something nonzero. The rail sits flush against the right edge, so
+      // it also needs the right inset; the bar only ever needs the top one.
+      style={{ paddingTop: "env(safe-area-inset-top)", paddingRight: isRail ? "env(safe-area-inset-right)" : undefined }}
     >
-      <div className="flex flex-col items-center gap-1 px-3 pb-1.5 pt-2 sm:px-6 sm:pb-2.5 sm:pt-3">
+      <div className={ENTRY_CLASS}>
         <span className="whitespace-nowrap text-[10px] font-medium uppercase tracking-wide text-slate-500">View</span>
         <div className="flex items-center gap-1">
           {VIEW_OPTIONS.map((option) => {
@@ -130,7 +144,7 @@ export const TopBar = forwardRef<HTMLDivElement, TopBarProps>(function TopBar(
       </div>
 
       {hasIntroText && (
-        <div className="flex flex-col items-center gap-1 px-3 pb-1.5 pt-2 sm:px-6 sm:pb-2.5 sm:pt-3">
+        <div className={ENTRY_CLASS}>
           <span className="whitespace-nowrap text-[10px] font-medium uppercase tracking-wide text-slate-500">Info</span>
           <button
             type="button"
@@ -145,7 +159,7 @@ export const TopBar = forwardRef<HTMLDivElement, TopBarProps>(function TopBar(
       )}
 
       {items.map((item) => (
-        <div key={item.label} className="flex flex-col items-center gap-0.5 px-3 pb-1.5 pt-2 sm:px-6 sm:pb-2.5 sm:pt-3">
+        <div key={item.label} className={ENTRY_CLASS}>
           <span className="whitespace-nowrap text-[10px] font-medium uppercase tracking-wide text-slate-500">{item.label}</span>
           <span className="whitespace-nowrap text-sm font-semibold tabular-nums">{item.value}</span>
         </div>
