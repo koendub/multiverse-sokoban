@@ -15,11 +15,17 @@ const PLAYER_COLOR = 0x60a5fa;
 /** Tint applied to the single box sprite, one color per box entity (up to 9 before repeating). */
 const BOX_PALETTE = [0xef4444, 0x3b82f6, 0x22c55e, 0xf97316, 0xa855f7, 0x06b6d4, 0xeab308, 0xec4899, 0x14b8a6];
 
+/** Unused for wall entities (they draw with the plain wall sprite, no tint), but GhostLayer requires a color. */
+const WALL_ENTITY_COLOR = 0xffffff;
+
 /**
  * Builds one Scene that overlays the given groups: for the player and each
- * box entity, every distinct position it could be in - across those groups
- * - is collected and drawn translucently on top of each other. Groups that
- * already agree contribute the same position once.
+ * entity, every distinct position it could be in - across those groups - is
+ * collected and drawn translucently on top of each other (an entity that's
+ * absent in some universes simply contributes fewer positions). Groups that
+ * already agree contribute the same position once. Box-role entities become
+ * `entities` (colored, pushable-looking); wall-role entities become
+ * `wallEntities` (drawn like the static grid walls).
  *
  * `facing` (the last direction input) isn't simulation state - it's purely
  * which way the player sprite should point - so it's passed in by the
@@ -28,10 +34,21 @@ const BOX_PALETTE = [0xef4444, 0x3b82f6, 0x22c55e, 0xf97316, 0xa855f7, 0x06b6d4,
 function buildSceneForGroups(mv: Multiverse, groups: readonly StateGroup[], facing: Facing): Scene {
   const player = dedupeLayer("player", PLAYER_COLOR, groups.map((g) => g.player));
 
-  const entities: GhostLayer[] = [...mv.entities.entries()].map(([entityId, spec], index) => {
-    const positions = groups.flatMap((group) => entityOutcomes(group, entityId, spec).map((o) => o.value));
-    return dedupeLayer(entityId, BOX_PALETTE[index % BOX_PALETTE.length], positions);
-  });
+  const entities: GhostLayer[] = [];
+  const wallEntities: GhostLayer[] = [];
+  let boxIndex = 0;
+  for (const [entityId, spec] of mv.entities) {
+    const positions = groups
+      .flatMap((group) => entityOutcomes(group, entityId, spec).map((o) => o.value))
+      .filter((v): v is Point => v !== null);
+
+    if (spec.role === "wall") {
+      wallEntities.push(dedupeLayer(entityId, WALL_ENTITY_COLOR, positions));
+    } else {
+      entities.push(dedupeLayer(entityId, BOX_PALETTE[boxIndex % BOX_PALETTE.length], positions));
+      boxIndex += 1;
+    }
+  }
 
   return {
     width: mv.grid.width,
@@ -41,6 +58,7 @@ function buildSceneForGroups(mv: Multiverse, groups: readonly StateGroup[], faci
     player,
     playerFacing: facing,
     entities,
+    wallEntities,
   };
 }
 
@@ -94,11 +112,20 @@ export function buildSingleUniverseScene(mv: Multiverse, key: UniverseKey, facin
   const view = mv.getUniverseView(key);
 
   const player: GhostLayer = { id: "player", color: PLAYER_COLOR, positions: [view.player] };
-  const entities: GhostLayer[] = [...mv.entities.keys()].map((entityId, index) => ({
-    id: entityId,
-    color: BOX_PALETTE[index % BOX_PALETTE.length],
-    positions: [view.boxes.get(entityId)!],
-  }));
+  const entities: GhostLayer[] = [];
+  const wallEntities: GhostLayer[] = [];
+  let boxIndex = 0;
+  for (const [entityId, spec] of mv.entities) {
+    const value = view.entities.get(entityId) ?? null;
+    const positions = value === null ? [] : [value];
+
+    if (spec.role === "wall") {
+      wallEntities.push({ id: entityId, color: WALL_ENTITY_COLOR, positions });
+    } else {
+      entities.push({ id: entityId, color: BOX_PALETTE[boxIndex % BOX_PALETTE.length], positions });
+      boxIndex += 1;
+    }
+  }
 
   return {
     width: mv.grid.width,
@@ -108,6 +135,7 @@ export function buildSingleUniverseScene(mv: Multiverse, key: UniverseKey, facin
     player,
     playerFacing: facing,
     entities,
+    wallEntities,
   };
 }
 

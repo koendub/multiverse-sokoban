@@ -10,15 +10,9 @@
     "#.........#",
     "###########"
   ],
-  "axes": [
-    {
-      "id": "box",
-      "size": 2
-    }
-  ],
-  "boxes": {
+  "entities": {
     "a": {
-      "type": "variant",
+      "type": "box",
       "axis": "box",
       "positions": [
         {

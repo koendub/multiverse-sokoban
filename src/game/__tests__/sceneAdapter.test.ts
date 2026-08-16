@@ -24,9 +24,8 @@ const level: LevelDef = {
     { x: 0, y: 3 }, { x: 1, y: 3 }, { x: 2, y: 3 }, { x: 3, y: 3 },
   ],
   goals: [],
-  axes: [{ id: "a", size: 2 }],
   player: { x: 1, y: 1 },
-  boxes: {
+  entities: {
     b: variantEntity("a", [
       { x: 2, y: 1 },
       { x: 2, y: 2 },

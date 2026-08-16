@@ -10,15 +10,9 @@
     "#.P......#",
     "##########"
   ],
-  "axes": [
-    {
-      "id": "boxAxis",
-      "size": 3
-    }
-  ],
-  "boxes": {
+  "entities": {
     "b": {
-      "type": "variant",
+      "type": "box",
       "axis": "boxAxis",
       "positions": [
         { "x": 2, "y": 3 },
@@ -26,5 +20,7 @@
         { "x": 4, "y": 3 }
       ]
     }
-  }
+  },
+  "great": 17,
+  "perfect": 15
 }

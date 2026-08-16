@@ -27,9 +27,19 @@ describe("entityOutcomes", () => {
     ]);
     const outcomes = entityOutcomes(group([0, 1, 2, 3]), "e", spec);
     expect(outcomes).toHaveLength(2);
-    const byX = new Map(outcomes.map((o) => [o.value.x, o.axisValues.slice().sort()]));
+    const byX = new Map(outcomes.map((o) => [o.value!.x, o.axisValues.slice().sort()]));
     expect(byX.get(0)).toEqual([0, 1]);
     expect(byX.get(1)).toEqual([2, 3]);
+  });
+
+  it("a null position buckets separately as 'absent', distinct from any real position", () => {
+    const spec = variantEntity("a", [{ x: 0, y: 0 }, null, null]);
+    const outcomes = entityOutcomes(group([0, 1, 2]), "e", spec);
+    expect(outcomes).toHaveLength(2);
+    const present = outcomes.find((o) => o.value !== null)!;
+    const absent = outcomes.find((o) => o.value === null)!;
+    expect(present.axisValues).toEqual([0]);
+    expect(absent.axisValues.slice().sort()).toEqual([1, 2]);
   });
 
   it("an override takes precedence over the position table", () => {

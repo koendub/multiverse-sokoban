@@ -9,15 +9,9 @@
     "#........#",
     "##########"
   ],
-  "axes": [
-    {
-      "id": "boxAxis",
-      "size": 1
-    }
-  ],
-  "boxes": {
+  "entities": {
     "b": {
-      "type": "variant",
+      "type": "box",
       "axis": "boxAxis",
       "positions": [
         { "x": 5, "y": 2 }

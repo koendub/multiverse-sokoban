@@ -38,5 +38,8 @@ export interface Scene {
   readonly goals: readonly Point[];
   readonly player: GhostLayer;
   readonly playerFacing: Facing;
+  /** Pushable box entities - drawn as a tinted box sprite per layer (`color` is used). */
   readonly entities: readonly GhostLayer[];
+  /** Wall-role entities: drawn like the static `walls` above, but can vary or be absent per universe, so each is its own ghostable layer (`color` is unused). */
+  readonly wallEntities: readonly GhostLayer[];
 }

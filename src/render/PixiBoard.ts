@@ -53,6 +53,7 @@ export class PixiBoard {
   private staticChildren: Container[] = [];
   private playerGhosts: GhostSprite[] = [];
   private entityGhosts = new Map<string, GhostSprite[]>();
+  private wallEntityGhosts = new Map<string, GhostSprite[]>();
   private tweens: Tween[] = [];
 
   private constructor(app: Application, root: Container, atlas: SpriteAtlas) {
@@ -145,6 +146,25 @@ export class PixiBoard {
     }
     this.entityGhosts = nextEntityGhosts;
 
+    // Wall-role entities draw like the static walls above (same texture, no
+    // tint) but can vary or be absent per universe, so - like box entities -
+    // each is its own ghost layer that can show several translucent
+    // positions at once and slides between them on the same tween path.
+    const nextWallEntityGhosts = new Map<string, GhostSprite[]>();
+    for (const layer of scene.wallEntities) {
+      const updated = this.reconcileGhosts(this.wallEntityGhosts.get(layer.id) ?? [], layer, size, now, (cell) => ({
+        texture: this.atlas.wallMid,
+        lift: cell.y === scene.height - 1 ? half : 0,
+      }));
+      nextWallEntityGhosts.set(layer.id, updated);
+      for (const g of updated) depthSorted.push({ row: g.cell.y, display: g.sprite });
+    }
+    for (const [id, ghosts] of this.wallEntityGhosts) {
+      if (nextWallEntityGhosts.has(id)) continue;
+      for (const g of ghosts) this.discard(g.sprite);
+    }
+    this.wallEntityGhosts = nextWallEntityGhosts;
+
     depthSorted.sort((a, b) => a.row - b.row);
     for (const item of depthSorted) this.root.addChild(item.display);
   }
@@ -181,7 +201,7 @@ export class PixiBoard {
     layer: GhostLayer,
     size: number,
     now: number,
-    style: () => { texture: Texture; flip?: boolean; tint?: number },
+    style: (cell: Point) => { texture: Texture; flip?: boolean; tint?: number; lift?: number },
   ): GhostSprite[] {
     const positions = layer.positions;
     const alpha = ghostAlpha(positions.length);
@@ -208,7 +228,7 @@ export class PixiBoard {
       const cell = positions[bestIndex];
       const fromX = g.sprite.x;
       const fromY = g.sprite.y;
-      this.applyGhostStyle(g.sprite, cell, size, alpha, style());
+      this.applyGhostStyle(g.sprite, cell, size, alpha, style(cell));
       const toX = g.sprite.x;
       const toY = g.sprite.y;
       // Drop any tween still in flight for this sprite before starting the
@@ -230,7 +250,7 @@ export class PixiBoard {
     positions.forEach((pos, i) => {
       if (claimed.has(i)) return;
       const sprite = new Sprite();
-      this.applyGhostStyle(sprite, pos, size, alpha, style());
+      this.applyGhostStyle(sprite, pos, size, alpha, style(pos));
       this.root.addChild(sprite);
       next.push({ sprite, cell: pos });
     });
@@ -238,11 +258,17 @@ export class PixiBoard {
     return next;
   }
 
-  private applyGhostStyle(sprite: Sprite, cell: Point, size: number, alpha: number, style: { texture: Texture; flip?: boolean; tint?: number }): void {
+  private applyGhostStyle(
+    sprite: Sprite,
+    cell: Point,
+    size: number,
+    alpha: number,
+    style: { texture: Texture; flip?: boolean; tint?: number; lift?: number },
+  ): void {
     sprite.texture = style.texture;
     sprite.tint = style.tint ?? 0xffffff;
     sprite.alpha = alpha;
-    placeTall(sprite, cell, size, style.flip ?? false);
+    placeTall(sprite, cell, size, style.flip ?? false, style.lift ?? 0);
   }
 
   private discard(sprite: Sprite): void {

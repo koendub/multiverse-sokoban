@@ -1,18 +1,26 @@
 import { describe, expect, it } from "vitest";
 import { totalUniverseCount, universeKeyAt } from "../levels/level.ts";
 import type { LevelDef } from "../levels/level.ts";
+import { variantEntity } from "../multiverse/entities.ts";
 
+// Axes aren't declared separately - "a" (size 2) and "b" (size 3) are
+// inferred purely from these two entities' position-array lengths.
 const level: LevelDef = {
   width: 5,
   height: 5,
   walls: [],
   goals: [{ x: 0, y: 0 }],
-  axes: [
-    { id: "a", size: 2 },
-    { id: "b", size: 3 },
-  ],
   player: { x: 0, y: 0 },
-  boxes: {},
+  entities: {
+    onA: variantEntity(
+      "a",
+      [0, 1].map((v) => ({ x: v, y: 1 })),
+    ),
+    onB: variantEntity(
+      "b",
+      [0, 1, 2].map((v) => ({ x: v, y: 2 })),
+    ),
+  },
 };
 
 describe("universeKeyAt", () => {

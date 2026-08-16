@@ -24,9 +24,8 @@ export const sampleLevel: LevelDef = {
   height: 6,
   walls: wallsFromMask(["########", "#......#", "#......#", "#..###.#", "#......#", "########"]),
   goals: [{ x: 2, y: 1 }],
-  axes: [{ id: "boxAxis", size: 3 }],
   player: { x: 2, y: 4 },
-  boxes: {
+  entities: {
     b: variantEntity("boxAxis", [
       { x: 2, y: 2 },
       { x: 3, y: 2 },

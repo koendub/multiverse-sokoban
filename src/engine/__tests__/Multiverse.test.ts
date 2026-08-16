@@ -18,9 +18,8 @@ describe("Multiverse - lazy split/merge", () => {
       height: 10,
       walls: [],
       goals: [],
-      axes: Array.from({ length: 5 }, (_, i) => ({ id: `axis${i}`, size: 3 })),
       player: { x: 0, y: 0 },
-      boxes: Object.fromEntries(
+      entities: Object.fromEntries(
         Array.from({ length: 5 }, (_, i) => [
           `box${i}`,
           variantEntity(
@@ -59,12 +58,12 @@ describe("Multiverse - lazy split/merge", () => {
 
     // boxAxis 0: box got pushed onto the goal
     expect(mv.getUniverseView({ boxAxis: 0 }).player).toEqual({ x: 2, y: 2 });
-    expect(mv.getUniverseView({ boxAxis: 0 }).boxes.get("b")).toEqual({ x: 2, y: 1 });
+    expect(mv.getUniverseView({ boxAxis: 0 }).entities.get("b")).toEqual({ x: 2, y: 1 });
 
     // boxAxis 1/2: nothing there, player just walked in; box untouched
     expect(mv.getUniverseView({ boxAxis: 1 }).player).toEqual({ x: 2, y: 2 });
-    expect(mv.getUniverseView({ boxAxis: 1 }).boxes.get("b")).toEqual({ x: 3, y: 2 });
-    expect(mv.getUniverseView({ boxAxis: 2 }).boxes.get("b")).toEqual({ x: 4, y: 2 });
+    expect(mv.getUniverseView({ boxAxis: 1 }).entities.get("b")).toEqual({ x: 3, y: 2 });
+    expect(mv.getUniverseView({ boxAxis: 2 }).entities.get("b")).toEqual({ x: 4, y: 2 });
   });
 
   it("re-merges branches once they reach an identical state", () => {
@@ -79,9 +78,9 @@ describe("Multiverse - lazy split/merge", () => {
     expect(groups.map((g) => mv.groupMultiplicity(g)).sort()).toEqual([1n, 2n]);
 
     expect(mv.getUniverseView({ boxAxis: 1 }).player).toEqual({ x: 3, y: 2 });
-    expect(mv.getUniverseView({ boxAxis: 1 }).boxes.get("b")).toEqual({ x: 4, y: 2 });
+    expect(mv.getUniverseView({ boxAxis: 1 }).entities.get("b")).toEqual({ x: 4, y: 2 });
     expect(mv.getUniverseView({ boxAxis: 2 }).player).toEqual({ x: 3, y: 2 });
-    expect(mv.getUniverseView({ boxAxis: 2 }).boxes.get("b")).toEqual({ x: 4, y: 2 });
+    expect(mv.getUniverseView({ boxAxis: 2 }).entities.get("b")).toEqual({ x: 4, y: 2 });
   });
 
   it("undo restores the previous group configuration", () => {
@@ -128,9 +127,8 @@ describe("Multiverse - core Sokoban mechanics", () => {
       { x: 0, y: 2 }, { x: 1, y: 2 }, { x: 2, y: 2 }, { x: 3, y: 2 }, { x: 4, y: 2 },
     ],
     goals: [{ x: 3, y: 1 }],
-    axes: [],
     player: { x: 1, y: 1 },
-    boxes: {},
+    entities: {},
   };
 
   it("a wall blocks the player uniformly", () => {
@@ -141,25 +139,65 @@ describe("Multiverse - core Sokoban mechanics", () => {
   });
 
   it("pushes a single box onto a goal and detects the win", () => {
-    const level: LevelDef = { ...corridorLevel, boxes: { b: constantEntity({ x: 2, y: 1 }) } };
+    const level: LevelDef = { ...corridorLevel, entities: { b: constantEntity({ x: 2, y: 1 }) } };
     const mv = new Multiverse(level);
     expect(mv.isSolved()).toBe(false);
     mv.step("Right"); // player (1,1) pushes box (2,1) -> (3,1), which is the goal
     expect(mv.getUniverseView({}).player).toEqual({ x: 2, y: 1 });
-    expect(mv.getUniverseView({}).boxes.get("b")).toEqual({ x: 3, y: 1 });
+    expect(mv.getUniverseView({}).entities.get("b")).toEqual({ x: 3, y: 1 });
     expect(mv.isSolved()).toBe(true);
   });
 
   it("refuses to push a box into another box", () => {
     const level: LevelDef = {
       ...corridorLevel,
-      boxes: { a: constantEntity({ x: 2, y: 1 }), b: constantEntity({ x: 3, y: 1 }) },
+      entities: { a: constantEntity({ x: 2, y: 1 }), b: constantEntity({ x: 3, y: 1 }) },
     };
     const mv = new Multiverse(level);
     mv.step("Right"); // player pushes box "a" toward box "b" at (3,1) - blocked
     expect(mv.getUniverseView({}).player).toEqual({ x: 1, y: 1 });
-    expect(mv.getUniverseView({}).boxes.get("a")).toEqual({ x: 2, y: 1 });
-    expect(mv.getUniverseView({}).boxes.get("b")).toEqual({ x: 3, y: 1 });
+    expect(mv.getUniverseView({}).entities.get("a")).toEqual({ x: 2, y: 1 });
+    expect(mv.getUniverseView({}).entities.get("b")).toEqual({ x: 3, y: 1 });
+  });
+
+  it("a wall-role entity blocks movement but is never pushable", () => {
+    const level: LevelDef = { ...corridorLevel, entities: { w: constantEntity({ x: 2, y: 1 }, "wall") } };
+    const mv = new Multiverse(level);
+    mv.step("Right"); // player would push a box here, but a wall entity just blocks
+    expect(mv.getUniverseView({}).player).toEqual({ x: 1, y: 1 });
+    expect(mv.getUniverseView({}).entities.get("w")).toEqual({ x: 2, y: 1 });
+  });
+
+  it("a wall-role entity absent (null) in some universes lets the player pass there", () => {
+    const level: LevelDef = {
+      ...corridorLevel,
+      entities: { w: variantEntity("gate", [{ x: 2, y: 1 }, null], "wall") },
+    };
+    const mv = new Multiverse(level);
+    mv.step("Right");
+
+    // gate value 0: wall present, blocked
+    expect(mv.getUniverseView({ gate: 0 }).player).toEqual({ x: 1, y: 1 });
+    // gate value 1: wall absent, player walks straight through
+    expect(mv.getUniverseView({ gate: 1 }).player).toEqual({ x: 2, y: 1 });
+  });
+
+  it("a box absent (null) in a universe doesn't block movement and doesn't need a goal", () => {
+    const level: LevelDef = {
+      ...corridorLevel,
+      entities: { b: variantEntity("present", [{ x: 2, y: 1 }, null]) },
+    };
+    const mv = new Multiverse(level);
+    mv.step("Right");
+
+    // present 0: box got pushed to the goal
+    expect(mv.getUniverseView({ present: 0 }).player).toEqual({ x: 2, y: 1 });
+    expect(mv.getUniverseView({ present: 0 }).entities.get("b")).toEqual({ x: 3, y: 1 });
+    // present 1: no box there at all, player just walks through
+    expect(mv.getUniverseView({ present: 1 }).player).toEqual({ x: 2, y: 1 });
+    expect(mv.getUniverseView({ present: 1 }).entities.get("b")).toBeNull();
+
+    expect(mv.isSolved()).toBe(true); // universe 0's box is on its goal; universe 1 has none to place
   });
 });
 
@@ -173,9 +211,8 @@ describe("Multiverse - correlated entities across universes", () => {
       height: 6,
       walls: [],
       goals: [],
-      axes: [{ id: "shared", size: 3 }],
       player: { x: 0, y: 3 },
-      boxes: {
+      entities: {
         a: variantEntity(
           "shared",
           [0, 1, 2].map((v) => ({ x: 1 + v, y: 3 })),
@@ -195,7 +232,7 @@ describe("Multiverse - correlated entities across universes", () => {
     for (const shared of [0, 1, 2]) {
       // box "b" must still reflect the same axis value's correlated value,
       // even though the split was triggered by box "a".
-      expect(mv.getUniverseView({ shared }).boxes.get("b")).toEqual({ x: 5, y: 1 + shared });
+      expect(mv.getUniverseView({ shared }).entities.get("b")).toEqual({ x: 5, y: 1 + shared });
     }
   });
 });
@@ -207,9 +244,8 @@ describe("Multiverse - solvedMultiplicity", () => {
       height: 6,
       walls: [],
       goals: [{ x: 0, y: 0 }],
-      axes: [{ id: "a", size: 3 }],
       player: { x: 5, y: 5 }, // far away, never moves
-      boxes: {
+      entities: {
         b: variantEntity(
           "a",
           [0, 1, 2].map((v) => (v === 0 ? { x: 0, y: 0 } : { x: v, y: 4 })),
@@ -227,9 +263,8 @@ describe("Multiverse - solvedMultiplicity", () => {
       height: 3,
       walls: [],
       goals: [{ x: 1, y: 1 }],
-      axes: [],
       player: { x: 0, y: 0 },
-      boxes: { b: constantEntity({ x: 1, y: 1 }) },
+      entities: { b: constantEntity({ x: 1, y: 1 }) },
     };
     const mv = new Multiverse(level);
     expect(mv.isSolved()).toBe(true);

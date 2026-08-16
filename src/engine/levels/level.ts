@@ -1,6 +1,5 @@
 import type { AxisId, AxisValue, EntityId, UniverseKey, Vec2 } from "../multiverse/types.ts";
-import type { Axis } from "../multiverse/entities.ts";
-import { fullDomain } from "../multiverse/entities.ts";
+import { deriveAxes, fullDomain } from "../multiverse/entities.ts";
 import type { EntitySpec } from "../multiverse/entities.ts";
 import { Grid } from "../multiverse/grid.ts";
 import type { StateGroup } from "../multiverse/StateGroup.ts";
@@ -10,17 +9,20 @@ export interface LevelDef {
   readonly height: number;
   readonly walls: readonly Vec2[];
   readonly goals: readonly Vec2[];
-  /** Independent sources of variation. Keep domains small - they're never multiplied together. */
-  readonly axes: readonly Axis[];
   /** Player starts identically in every universe. */
   readonly player: Vec2;
-  readonly boxes: Readonly<Record<EntityId, EntitySpec>>;
+  /** Axes (which independent things vary, and how many ways) are never declared here - see deriveAxes. */
+  readonly entities: Readonly<Record<EntityId, EntitySpec>>;
 }
 
 export interface BuiltLevel {
   readonly grid: Grid;
   readonly entities: ReadonlyMap<EntityId, EntitySpec>;
   readonly initialGroup: StateGroup;
+}
+
+function entityMap(level: LevelDef): ReadonlyMap<EntityId, EntitySpec> {
+  return new Map(Object.entries(level.entities));
 }
 
 /**
@@ -31,20 +33,11 @@ export interface BuiltLevel {
  */
 export function buildLevel(level: LevelDef): BuiltLevel {
   const grid = new Grid(level.width, level.height, level.walls, level.goals);
-  const entities = new Map<EntityId, EntitySpec>(Object.entries(level.boxes));
-
-  const axesById = new Map(level.axes.map((axis) => [axis.id, axis]));
-  for (const [entityId, spec] of entities) {
-    if (spec.kind !== "variant") continue;
-    const axis = axesById.get(spec.axis);
-    if (!axis) throw new Error(`Entity "${entityId}" references unknown axis "${spec.axis}"`);
-    if (spec.positions.length !== axis.size) {
-      throw new Error(`Entity "${entityId}" has ${spec.positions.length} positions but axis "${spec.axis}" has size ${axis.size}`);
-    }
-  }
+  const entities = entityMap(level);
+  const axes = deriveAxes(entities);
 
   const axisSubsets = new Map<AxisId, ReadonlySet<AxisValue>>();
-  for (const axis of level.axes) {
+  for (const axis of axes) {
     axisSubsets.set(axis.id, new Set(fullDomain(axis)));
   }
 
@@ -59,7 +52,7 @@ export function buildLevel(level: LevelDef): BuiltLevel {
 
 /** Product of every axis's domain size - the theoretical universe count. For display only. */
 export function totalUniverseCount(level: LevelDef): bigint {
-  return level.axes.reduce((total, axis) => total * BigInt(axis.size), 1n);
+  return deriveAxes(entityMap(level)).reduce((total, axis) => total * BigInt(axis.size), 1n);
 }
 
 /**
@@ -71,7 +64,7 @@ export function totalUniverseCount(level: LevelDef): bigint {
 export function universeKeyAt(level: LevelDef, index: number): UniverseKey {
   let remaining = index;
   const key: Record<AxisId, AxisValue> = {};
-  for (const axis of level.axes) {
+  for (const axis of deriveAxes(entityMap(level))) {
     key[axis.id] = remaining % axis.size;
     remaining = Math.floor(remaining / axis.size);
   }

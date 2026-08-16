@@ -16,7 +16,7 @@ type Entities = ReadonlyMap<EntityId, EntitySpec>;
 function canonicalSignature(group: StateGroup, entities: Entities): string {
   const parts = [...entities.entries()].map(([id, spec]) => {
     const values = entityOutcomes(group, id, spec)
-      .map((o) => vecKey(o.value))
+      .map((o) => (o.value === null ? "∅" : vecKey(o.value)))
       .sort();
     return `${id}=${values.join(",")}`;
   });

@@ -22,7 +22,8 @@ function findAmbiguity(group: StateGroup, target: Vec2, entities: Entities): { a
     if (!subset || subset.size <= 1) continue;
     const matching = new Set<AxisValue>();
     for (const v of subset) {
-      if (vecEq(spec.positions[v], target)) matching.add(v);
+      const pos = spec.positions[v];
+      if (pos && vecEq(pos, target)) matching.add(v);
     }
     if (matching.size > 0 && matching.size < subset.size) {
       return { axis: spec.axis, matching };
@@ -35,11 +36,13 @@ function findAmbiguity(group: StateGroup, target: Vec2, entities: Entities): { a
  * Which entity (if any) occupies `target`, given the group has already been
  * split so no entity is ambiguous about it (see findAmbiguity). Under that
  * guarantee, checking one representative value per entity is enough - if it
- * matches, every universe in the group agrees.
+ * matches, every universe in the group agrees. An entity that's absent
+ * (`null`) here never occupies anything.
  */
 function findOccupant(group: StateGroup, target: Vec2, entities: Entities): EntityId | null {
   for (const [entityId, spec] of entities) {
-    if (vecEq(representativeValue(group, entityId, spec), target)) return entityId;
+    const value = representativeValue(group, entityId, spec);
+    if (value && vecEq(value, target)) return entityId;
   }
   return null;
 }
@@ -74,6 +77,12 @@ export function resolveMove(group: StateGroup, dir: Vec2, grid: Grid, entities: 
   const occupant = findOccupant(group, target, entities);
   if (occupant === null) {
     return [{ ...group, player: target }];
+  }
+
+  // A wall entity blocks movement outright, just like the static grid - it's
+  // never pushable, so there's nothing more to resolve for this branch.
+  if (entities.get(occupant)!.role === "wall") {
+    return [group];
   }
 
   // Target holds a box (uniformly, for every universe in this group): try to push it.

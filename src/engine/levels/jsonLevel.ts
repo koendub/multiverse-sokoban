@@ -1,7 +1,6 @@
 import type { EntityId, Vec2 } from "../multiverse/types.ts";
-import type { Axis } from "../multiverse/entities.ts";
 import { constantEntity, variantEntity } from "../multiverse/entities.ts";
-import type { EntitySpec } from "../multiverse/entities.ts";
+import type { EntityRole, EntitySpec } from "../multiverse/entities.ts";
 import type { LevelDef } from "./level.ts";
 
 /**
@@ -10,27 +9,27 @@ import type { LevelDef } from "./level.ts";
  *
  * - `grid` is an ASCII mask: '#' wall, '.' floor, 'G' goal, 'P' the (single,
  *   universe-independent) player start. Rows must all be the same length.
- * - `axes` declares each independent source of variation and its domain size.
- * - `boxes` maps an entity id to either a fixed position ("constant") or a
- *   "variant" tied to one axis, with one explicit position per axis value.
+ * - `entities` maps an entity id to a "box" (pushable, must reach a goal to
+ *   solve the level) or a "wall" (blocks movement like the grid, but can
+ *   vary or be absent per universe, and is never pushable). Each entity is
+ *   either a fixed position (`pos`) or tied to an axis (`axis` + one
+ *   `positions` entry per axis value, `null` meaning "absent there"). Axis
+ *   ids and sizes are never declared separately - see deriveAxes in
+ *   entities.ts - they're inferred from how entities use them, and every
+ *   entity sharing an axis id must declare the same number of positions.
  */
-export interface LevelJsonAxis {
-  readonly id: string;
-  readonly size: number;
-}
-
-export interface LevelJsonConstantBox {
-  readonly type: "constant";
+export interface LevelJsonEntityConstant {
+  readonly type: EntityRole;
   readonly pos: Vec2;
 }
 
-export interface LevelJsonVariantBox {
-  readonly type: "variant";
+export interface LevelJsonEntityVariant {
+  readonly type: EntityRole;
   readonly axis: string;
-  readonly positions: readonly Vec2[];
+  readonly positions: readonly (Vec2 | null)[];
 }
 
-export type LevelJsonBox = LevelJsonConstantBox | LevelJsonVariantBox;
+export type LevelJsonEntity = LevelJsonEntityConstant | LevelJsonEntityVariant;
 
 /**
  * How available one of the 3 view modes is on a level:
@@ -60,8 +59,7 @@ export interface LevelJson {
   readonly number: number;
   readonly name: string;
   readonly grid: readonly string[];
-  readonly axes?: readonly LevelJsonAxis[];
-  readonly boxes?: Readonly<Record<string, LevelJsonBox>>;
+  readonly entities?: Readonly<Record<string, LevelJsonEntity>>;
   /** Optional blurb shown above the game render. Omit for no text at all. */
   readonly text?: string;
   /** Move counts for the silver/gold star thresholds - see starRating.ts. Both optional; omitting one just makes that tier unreachable. */
@@ -122,14 +120,6 @@ function parseGrid(json: LevelJson, context: string): { width: number; height: n
   return { width, height, walls, goals, player };
 }
 
-function parseAxes(json: LevelJson, context: string): Axis[] {
-  return (json.axes ?? []).map((a): Axis => {
-    if (!a.id) fail(context, "an axis is missing 'id'");
-    if (!Number.isInteger(a.size) || a.size < 1) fail(context, `axis "${a.id}" has invalid size ${a.size}`);
-    return { id: a.id, size: a.size };
-  });
-}
-
 const VALID_VIEW_RESTRICTIONS: ReadonlySet<string> = new Set<ViewRestriction>(["unrestricted", "before-moves", "disabled"]);
 
 function parseViews(json: LevelJson, context: string): LevelViews {
@@ -143,41 +133,47 @@ function parseViews(json: LevelJson, context: string): LevelViews {
   return { merged: pick("merged"), perCharacter: pick("perCharacter"), perUniverse: pick("perUniverse") };
 }
 
+const VALID_ROLES: ReadonlySet<string> = new Set<EntityRole>(["box", "wall"]);
+
 function inBounds(pos: Vec2, width: number, height: number): boolean {
   return pos.x >= 0 && pos.y >= 0 && pos.x < width && pos.y < height;
 }
 
-function parseBoxes(
-  json: LevelJson,
-  axes: readonly Axis[],
-  bounds: { width: number; height: number },
-  context: string,
-): Record<EntityId, EntitySpec> {
-  const axisById = new Map(axes.map((a) => [a.id, a]));
-  const boxes: Record<EntityId, EntitySpec> = {};
+function parseEntities(json: LevelJson, bounds: { width: number; height: number }, context: string): Record<EntityId, EntitySpec> {
+  const entities: Record<EntityId, EntitySpec> = {};
+  const positionCountByAxis = new Map<string, number>();
 
-  for (const [entityId, spec] of Object.entries(json.boxes ?? {})) {
-    const boxContext = `${context}, box "${entityId}"`;
-    if (spec.type === "constant") {
-      if (!inBounds(spec.pos, bounds.width, bounds.height)) fail(boxContext, `position (${spec.pos.x},${spec.pos.y}) is out of bounds`);
-      boxes[entityId] = constantEntity(spec.pos);
-    } else if (spec.type === "variant") {
-      const axis = axisById.get(spec.axis);
-      if (!axis) fail(boxContext, `references unknown axis "${spec.axis}"`);
-      if (!Array.isArray(spec.positions) || spec.positions.length !== axis.size) {
-        fail(boxContext, `needs exactly ${axis.size} positions for axis "${spec.axis}", got ${spec.positions?.length ?? 0}`);
+  for (const [entityId, spec] of Object.entries(json.entities ?? {})) {
+    const entityContext = `${context}, entity "${entityId}"`;
+    if (!VALID_ROLES.has(spec.type)) fail(entityContext, `unknown type "${spec.type}"`);
+
+    if ("pos" in spec) {
+      if (!inBounds(spec.pos, bounds.width, bounds.height)) fail(entityContext, `position (${spec.pos.x},${spec.pos.y}) is out of bounds`);
+      entities[entityId] = constantEntity({ x: spec.pos.x, y: spec.pos.y }, spec.type);
+    } else if ("positions" in spec) {
+      if (!Array.isArray(spec.positions) || spec.positions.length === 0) fail(entityContext, "'positions' must be a non-empty array");
+
+      const expectedSize = positionCountByAxis.get(spec.axis);
+      if (expectedSize !== undefined && expectedSize !== spec.positions.length) {
+        fail(
+          entityContext,
+          `axis "${spec.axis}" has ${spec.positions.length} positions here but ${expectedSize} on another entity - every entity sharing an axis must declare the same number of positions`,
+        );
       }
+      positionCountByAxis.set(spec.axis, spec.positions.length);
+
       const positions = spec.positions.map((p, i) => {
-        if (!inBounds(p, bounds.width, bounds.height)) fail(boxContext, `position #${i} (${p.x},${p.y}) is out of bounds`);
+        if (p === null) return null;
+        if (!inBounds(p, bounds.width, bounds.height)) fail(entityContext, `position #${i} (${p.x},${p.y}) is out of bounds`);
         return { x: p.x, y: p.y };
       });
-      boxes[entityId] = variantEntity(axis.id, positions);
+      entities[entityId] = variantEntity(spec.axis, positions, spec.type);
     } else {
-      fail(boxContext, `unknown type "${(spec as LevelJsonBox).type}"`);
+      fail(entityContext, "must have either 'pos' or 'positions'");
     }
   }
 
-  return boxes;
+  return entities;
 }
 
 export function parseLevelJson(json: LevelJson): ParsedLevel {
@@ -191,10 +187,9 @@ export function parseLevelJson(json: LevelJson): ParsedLevel {
   if (json.perfect !== undefined && (!Number.isInteger(json.perfect) || json.perfect < 0)) fail(context, "'perfect' must be a non-negative integer if present");
 
   const { width, height, walls, goals, player } = parseGrid(json, context);
-  const axes = parseAxes(json, context);
-  const boxes = parseBoxes(json, axes, { width, height }, context);
+  const entities = parseEntities(json, { width, height }, context);
   const views = parseViews(json, context);
 
-  const level: LevelDef = { width, height, walls, goals, axes, player, boxes };
+  const level: LevelDef = { width, height, walls, goals, player, entities };
   return { number: json.number, name: json.name, text: json.text, great: json.great, perfect: json.perfect, views, level };
 }

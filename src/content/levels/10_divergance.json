@@ -9,15 +9,9 @@
     "#...P#",
     "######"
   ],
-  "axes": [
-    {
-      "id": "axisA",
-      "size": 2
-    }
-  ],
-  "boxes": {
+  "entities": {
     "a": {
-      "type": "variant",
+      "type": "box",
       "axis": "axisA",
       "positions": [
         {

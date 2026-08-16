@@ -15,15 +15,9 @@
     "#.P.##",
     "######"
   ],
-  "axes": [
-    {
-      "id": "axa",
-      "size": 4
-    }
-  ],
-  "boxes": {
+  "entities": {
     "a": {
-      "type": "variant",
+      "type": "box",
       "axis": "axa",
       "positions": [
         {

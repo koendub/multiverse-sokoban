@@ -9,19 +9,9 @@
     "#........#",
     "##########"
   ],
-  "axes": [
-    {
-      "id": "axa",
-      "size": 2
-    },
-    {
-      "id": "axb",
-      "size": 2
-    }
-  ],
-  "boxes": {
+  "entities": {
     "a": {
-      "type": "variant",
+      "type": "box",
       "axis": "axa",
       "positions": [
         { "x": 4, "y": 2 },
@@ -29,12 +19,14 @@
       ]
     },
     "b": {
-      "type": "variant",
+      "type": "box",
       "axis": "axb",
       "positions": [
         { "x": 4, "y": 3 },
         { "x": 5, "y": 2 }
       ]
     }
-  }
+  },
+  "great": 37,
+  "perfect": 33
 }

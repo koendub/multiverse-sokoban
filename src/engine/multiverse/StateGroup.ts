@@ -35,10 +35,15 @@ export function restrictGroupByAxis(group: StateGroup, axis: AxisId, subset: Rea
  * and the axis values (if any) that produce it - used to decide whether a
  * decision needs to split the group. `axisValues` is empty for constant or
  * overridden entities, which are always uniform across the whole group.
+ * `value` is `null` when the entity simply isn't present for that outcome.
  */
 export interface EntityOutcome {
-  readonly value: Vec2;
+  readonly value: Vec2 | null;
   readonly axisValues: readonly AxisValue[];
+}
+
+function outcomeKey(value: Vec2 | null): string {
+  return value === null ? "∅" : `${value.x},${value.y}`;
 }
 
 export function entityOutcomes(group: StateGroup, entityId: EntityId, spec: EntitySpec): EntityOutcome[] {
@@ -47,10 +52,10 @@ export function entityOutcomes(group: StateGroup, entityId: EntityId, spec: Enti
   if (spec.kind === "constant") return [{ value: spec.pos, axisValues: [] }];
 
   const subset = group.axisSubsets.get(spec.axis) ?? new Set<AxisValue>();
-  const buckets = new Map<string, { value: Vec2; axisValues: AxisValue[] }>();
+  const buckets = new Map<string, { value: Vec2 | null; axisValues: AxisValue[] }>();
   for (const v of subset) {
     const value = spec.positions[v];
-    const key = `${value.x},${value.y}`;
+    const key = outcomeKey(value);
     let bucket = buckets.get(key);
     if (!bucket) {
       bucket = { value, axisValues: [] };
@@ -61,8 +66,8 @@ export function entityOutcomes(group: StateGroup, entityId: EntityId, spec: Enti
   return [...buckets.values()];
 }
 
-/** The entity's current value, assuming it's already uniform within the group (see movement.ts's split check). */
-export function representativeValue(group: StateGroup, entityId: EntityId, spec: EntitySpec): Vec2 {
+/** The entity's current value (or `null` if absent), assuming it's already uniform within the group (see movement.ts's split check). */
+export function representativeValue(group: StateGroup, entityId: EntityId, spec: EntitySpec): Vec2 | null {
   const override = group.overrides.get(entityId);
   if (override) return override;
   if (spec.kind === "constant") return spec.pos;
