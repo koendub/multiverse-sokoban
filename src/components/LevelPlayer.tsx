@@ -21,6 +21,7 @@ import { TopBar } from "./TopBar.tsx";
 import { StarIcon } from "./StarIcon.tsx";
 import { LevelIntroModal } from "./LevelIntroModal.tsx";
 import { TouchControls } from "./TouchControls.tsx";
+import { SolverPanel } from "./SolverPanel.tsx";
 
 /** Tile size used before the board area's real size has been measured (see useElementSize.ts). */
 const DEFAULT_TILE_SIZE = 48;
@@ -170,6 +171,8 @@ export function LevelPlayer({ levelNumber, levelName, levelText, levelGreat, lev
       {introOpen && levelText && <LevelIntroModal text={levelText} onClose={() => setIntroOpen(false)} />}
 
       {isPhone && <TouchControls onUndo={undo} onRestart={restart} />}
+
+      <SolverPanel level={level} />
 
       {/*
        * This wrapper is the sizing source for the board(s) below: it's a

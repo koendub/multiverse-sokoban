@@ -3,6 +3,8 @@
 
 Just complete simple tasks on a small grid... In every universe
 
+It is (hosted right here on github)[https://koendub.github.io/multiverse-sokoban/]. Try it out!
+
 # Core idea
 
 A grid-based puzzle game where every player action happens simultaneously across multiple parallel universes.

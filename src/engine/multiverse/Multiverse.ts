@@ -3,9 +3,10 @@ import { Direction } from "./types.ts";
 import type { Grid } from "./grid.ts";
 import type { EntitySpec } from "./entities.ts";
 import type { StateGroup } from "./StateGroup.ts";
-import { entityOutcomes, representativeValue } from "./StateGroup.ts";
+import { representativeValue } from "./StateGroup.ts";
 import { resolveMove } from "./movement.ts";
 import { mergeGroups } from "./merge.ts";
+import { groupsSolved } from "./solved.ts";
 import type { LevelDef } from "../levels/level.ts";
 import { buildLevel } from "../levels/level.ts";
 
@@ -83,11 +84,7 @@ export class Multiverse {
    * need a goal to not be sitting on.
    */
   isSolved(): boolean {
-    return this.groups.every((group) =>
-      [...this.entities].every(
-        ([id, spec]) => spec.role !== "box" || entityOutcomes(group, id, spec).every((o) => o.value === null || this.grid.isGoal(o.value)),
-      ),
-    );
+    return groupsSolved(this.groups, this.grid, this.entities);
   }
 
   /**

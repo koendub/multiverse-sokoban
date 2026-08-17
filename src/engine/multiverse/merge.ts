@@ -12,8 +12,12 @@ type Entities = ReadonlyMap<EntityId, EntitySpec>;
  * distinct values* it could currently take. Which raw axis values produce
  * those distinct values doesn't matter for equality - only the union of
  * axis subsets changes once we actually merge.
+ *
+ * Exported for solve/solveLevel.ts's search, which needs the same notion of
+ * "two states are indistinguishable" to dedupe visited states - just
+ * combined across every group in a whole multiverse state, not just one pair.
  */
-function canonicalSignature(group: StateGroup, entities: Entities): string {
+export function canonicalSignature(group: StateGroup, entities: Entities): string {
   const parts = [...entities.entries()].map(([id, spec]) => {
     const values = entityOutcomes(group, id, spec)
       .map((o) => (o.value === null ? "∅" : vecKey(o.value)))
