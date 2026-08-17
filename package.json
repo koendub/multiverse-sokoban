@@ -1,12 +1,12 @@
 {
   "name": "multiverse-sokoban",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
-  "homepage": "https://gitname.github.io/multiverse-sokoban",
+  "homepage": "https://koendub.github.io/multiverse-sokoban",
   "scripts": {
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build",
+    "deploy": "gh-pages -d dist",
     "dev": "vite --host",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
