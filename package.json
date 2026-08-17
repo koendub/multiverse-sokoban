@@ -1,9 +1,9 @@
 {
   "name": "multiverse-sokoban",
+  "homepage": "https://koendub.github.io/multiverse-sokoban",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "homepage": "https://koendub.github.io/multiverse-sokoban",
   "scripts": {
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",

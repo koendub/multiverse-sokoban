@@ -1,5 +1,5 @@
 
-# Multiverse Puzzles
+# Multiverse Sokoban
 
 Just complete simple tasks on a small grid... In every universe
 

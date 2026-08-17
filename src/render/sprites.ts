@@ -1,6 +1,6 @@
 import { Assets, Rectangle, Texture } from "pixi.js";
+import spriteSheetUrl from "../assets/spritesheet.png";
 
-const SHEET_URL = "/spritesheet.png";
 const CELL = 128;
 const TALL = CELL * 2;
 
@@ -33,7 +33,7 @@ let cached: Promise<SpriteAtlas> | null = null;
 
 /** Loads (once, cached) and slices the shared game spritesheet into named textures. */
 export function loadSpriteAtlas(): Promise<SpriteAtlas> {
-  cached ??= Assets.load<Texture>(SHEET_URL).then((base) => ({
+  cached ??= Assets.load<Texture>(spriteSheetUrl).then((base) => ({
     floors: [0, 1, 2, 3].map((i) => slice(base, i * CELL, 0, CELL, CELL)),
     goalFloor: slice(base, 4 * CELL, 0, CELL, CELL),
     wallEdge: slice(base, 0, CELL, CELL, TALL),
