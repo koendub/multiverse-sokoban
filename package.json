@@ -1,9 +1,12 @@
 {
-  "name": "multiverse-puzzles",
+  "name": "multiverse-sokoban",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "homepage": "https://gitname.github.io/multiverse-sokoban",
   "scripts": {
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
     "dev": "vite --host",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
@@ -25,6 +28,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
     "babel-plugin-react-compiler": "^1.0.0",
+    "gh-pages": "^6.3.0",
     "oxlint": "^1.75.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",

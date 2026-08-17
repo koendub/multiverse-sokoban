@@ -1,6 +1,6 @@
 import type { LevelCatalogEntry } from "./levelCatalog.ts";
 
-const STORAGE_KEY = "multiverse-puzzles:levelNumber";
+const STORAGE_KEY = "multiverse-sokoban:levelNumber";
 
 /** The level number to resume at: the last one saved, or the catalog's first. */
 export function loadStoredLevelNumber(catalog: readonly LevelCatalogEntry[]): number {

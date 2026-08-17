@@ -1,4 +1,4 @@
-const STORAGE_KEY = "multiverse-puzzles:bestMoves";
+const STORAGE_KEY = "multiverse-sokoban:bestMoves";
 
 export type BestMovesByLevel = Readonly<Record<number, number>>;
 
