@@ -120,7 +120,12 @@ export function LevelPlayer({ levelNumber, levelName, levelText, levelGreat, lev
   useWasdControls(move);
   useSwipeControls(move);
   useUndoRestartKeys(undo, restart);
-  useAdvanceKey(solved, onAdvance);
+  // Space closes the intro popup if it's open; only once it's closed does
+  // Space fall through to advancing past a solved level - otherwise both
+  // would fire on the same press whenever the player reopens the popup
+  // (via the info icon) after already solving the level.
+  useAdvanceKey(introOpen, () => setIntroOpen(false));
+  useAdvanceKey(solved && !introOpen, onAdvance);
   useViewKeys(selectView);
 
   const [boardAreaRef, boardAreaSize] = useElementSize<HTMLDivElement>();

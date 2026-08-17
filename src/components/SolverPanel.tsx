@@ -4,6 +4,7 @@ import type { LevelDef } from "../engine/levels/level.ts";
 import { solveLevel } from "../engine/solve/solveLevel.ts";
 import { analyzeSolution } from "../engine/solve/analyzeSolution.ts";
 import type { SolutionStats } from "../engine/solve/analyzeSolution.ts";
+import { formatMoves } from "../engine/solve/formatMoves.ts";
 
 export interface SolverPanelProps {
   readonly level: LevelDef;
@@ -14,8 +15,6 @@ type SolveState =
   | { readonly status: "solving" }
   | { readonly status: "failed" }
   | { readonly status: "solved"; readonly moves: readonly DirectionName[]; readonly stats: SolutionStats };
-
-const ARROWS: Readonly<Record<DirectionName, string>> = { Up: "↑", Down: "↓", Left: "←", Right: "→" };
 
 const SOLVER_ENABLED = import.meta.env.VITE_ENABLE_SOLVER === "true";
 
@@ -65,7 +64,7 @@ export function SolverPanel({ level }: SolverPanelProps) {
             <span className="text-slate-500">Optimal moves: </span>
             <span className="font-semibold tabular-nums">{state.stats.moveCount}</span>
           </div>
-          <div className="wrap-break-word font-mono text-sm text-sky-300">{state.moves.map((dir) => ARROWS[dir]).join(" ")}</div>
+          <div className="wrap-break-word font-mono text-sm text-sky-300">{formatMoves(state.moves)}</div>
           <div>
             <span className="text-slate-500">Max state groups: </span>
             <span className="font-semibold tabular-nums">{state.stats.maxStateGroups}</span>
