@@ -1,0 +1,11 @@
+{
+  "name": "Multiverse Puzzles",
+  "short_name": "Multiverse",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "icons": [
+    { "src": "/favicon.png", "sizes": "256x256", "type": "image/png", "purpose": "any" }
+  ]
+}
