@@ -70,4 +70,48 @@ describe("solveLevel", () => {
     expect(moves).not.toBeNull();
     expect(solves(sampleLevel, moves!)).toBe(true);
   });
+
+  it("still finds the real solution when a reachable dead-end corner exists nearby", () => {
+    // ######
+    // ##...#   <- pushing the box up into (2,1) corners it: wall above (the
+    // #...G#      border) and wall to its left (the extra one at (1,1)).
+    // #....#   <- but the player can also just push it straight to the goal
+    // ######      from where it starts - the trap is a wrong turn, not the only route.
+    const level: LevelDef = {
+      width: 6,
+      height: 5,
+      walls: [
+        { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }, { x: 4, y: 0 }, { x: 5, y: 0 },
+        { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 5, y: 1 },
+        { x: 0, y: 2 }, { x: 5, y: 2 },
+        { x: 0, y: 3 }, { x: 5, y: 3 },
+        { x: 0, y: 4 }, { x: 1, y: 4 }, { x: 2, y: 4 }, { x: 3, y: 4 }, { x: 4, y: 4 }, { x: 5, y: 4 },
+      ],
+      goals: [{ x: 4, y: 2 }],
+      player: { x: 1, y: 2 },
+      entities: { b: constantEntity({ x: 2, y: 2 }) },
+    };
+    const moves = solveLevel(level);
+    expect(moves).toEqual(["Right", "Right"]);
+    expect(solves(level, moves!)).toBe(true);
+  });
+
+  it("doesn't mistake a box against a single wall for a corner deadlock", () => {
+    // The box only has a wall above it, not to either side - it can still
+    // be pushed sideways onto the goal, so this must not get pruned.
+    const level: LevelDef = {
+      width: 5,
+      height: 4,
+      walls: [
+        { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }, { x: 4, y: 0 },
+        { x: 0, y: 1 }, { x: 4, y: 1 },
+        { x: 0, y: 2 }, { x: 4, y: 2 },
+        { x: 0, y: 3 }, { x: 1, y: 3 }, { x: 2, y: 3 }, { x: 3, y: 3 }, { x: 4, y: 3 },
+      ],
+      goals: [{ x: 3, y: 1 }],
+      player: { x: 1, y: 1 },
+      entities: { b: constantEntity({ x: 2, y: 1 }) },
+    };
+    expect(solveLevel(level)).toEqual(["Right"]);
+  });
 });

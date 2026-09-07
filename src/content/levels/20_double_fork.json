@@ -1,0 +1,38 @@
+{
+  "number": 20,
+  "name": "Double Fork",
+  "text": "Two independent boxes, two independent decisions. Watch the state groups count climb as you resolve each one - and see if you can catch your character standing in more than one place at once.",
+  "grid": [
+    "#######",
+    "#....G#",
+    "#.....#",
+    "#.P..G#",
+    "#.....#",
+    "#.....#",
+    "#.....#",
+    "#....G#",
+    "#.....#",
+    "#....G#",
+    "#######"
+  ],
+  "entities": {
+    "a": {
+      "type": "box",
+      "axis": "axa",
+      "positions": [
+        { "x": 5, "y": 2 },
+        { "x": 4, "y": 3 }
+      ]
+    },
+    "b": {
+      "type": "box",
+      "axis": "axb",
+      "positions": [
+        { "x": 5, "y": 8 },
+        { "x": 4, "y": 7 }
+      ]
+    }
+  },
+  "great": 19,
+  "perfect": 15
+}

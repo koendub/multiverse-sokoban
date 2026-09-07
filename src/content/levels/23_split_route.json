@@ -1,0 +1,36 @@
+{
+  "number": 23,
+  "name": "Split Route",
+  "text": "One of these two corridors is walled off - which one depends on the universe. There's no path that works for everyone, so you'll have to try both.",
+  "grid": [
+    "###########",
+    "#.........#",
+    "#P#####..G#",
+    "#.........#",
+    "###########"
+  ],
+  "entities": {
+    "wallTop": {
+      "type": "wall",
+      "axis": "route",
+      "positions": [
+        { "x": 4, "y": 1 },
+        null
+      ]
+    },
+    "wallBottom": {
+      "type": "wall",
+      "axis": "route",
+      "positions": [
+        null,
+        { "x": 4, "y": 3 }
+      ]
+    },
+    "b": {
+      "type": "box",
+      "pos": { "x": 8, "y": 2 }
+    }
+  },
+  "great": 21,
+  "perfect": 17
+}

@@ -1,0 +1,39 @@
+{
+  "number": 24,
+  "name": "Maybe a Box",
+  "text": "In some universes there's nothing here to push at all. See if you can tell, from the outside, which universes those are.",
+  "grid": [
+    "#######",
+    "#....G#",
+    "#.....#",
+    "#.P..G#",
+    "#.....#",
+    "#.....#",
+    "#.....#",
+    "#....G#",
+    "#.....#",
+    "#....G#",
+    "#######"
+  ],
+  "entities": {
+    "a": {
+      "type": "box",
+      "axis": "axa",
+      "positions": [
+        null,
+        { "x": 5, "y": 2 },
+        { "x": 4, "y": 3 }
+      ]
+    },
+    "b": {
+      "type": "box",
+      "axis": "axb",
+      "positions": [
+        { "x": 5, "y": 8 },
+        { "x": 4, "y": 7 }
+      ]
+    }
+  },
+  "great": 19,
+  "perfect": 15
+}

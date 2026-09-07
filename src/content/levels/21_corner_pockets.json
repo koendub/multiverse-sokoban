@@ -1,0 +1,36 @@
+{
+  "number": 21,
+  "name": "Corner Pockets",
+  "text": "One decision tucked in the top-right, another in the bottom-left. Different corners, same trick.",
+  "grid": [
+    "#########",
+    "#......G#",
+    "#.......#",
+    "#......G#",
+    "#...P...#",
+    "#.......#",
+    "#.......#",
+    "#G.G....#",
+    "#########"
+  ],
+  "entities": {
+    "a": {
+      "type": "box",
+      "axis": "axa",
+      "positions": [
+        { "x": 7, "y": 2 },
+        { "x": 6, "y": 3 }
+      ]
+    },
+    "b": {
+      "type": "box",
+      "axis": "axb",
+      "positions": [
+        { "x": 2, "y": 7 },
+        { "x": 3, "y": 6 }
+      ]
+    }
+  },
+  "great": 20,
+  "perfect": 16
+}
